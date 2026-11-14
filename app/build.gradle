@@ -1,0 +1,54 @@
+plugins {
+    id 'com.android.application'
+}
+
+def buildNumber = (System.getenv("GITHUB_RUN_NUMBER") ?: "1") as Integer
+
+android {
+    namespace 'com.myklharu.stride'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.myklharu.stride"
+        minSdk 26
+        targetSdk 34
+        versionCode buildNumber
+        versionName "1.0.${buildNumber}"
+    }
+
+    // A fixed signing key means each new build installs over the old one and keeps your data.
+    signingConfigs {
+        stride {
+            storeFile file('stride.keystore')
+            storePassword 'stride-app'
+            keyAlias 'stride'
+            keyPassword 'stride-app'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.stride
+        }
+        debug {
+            signingConfig signingConfigs.stride
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core:1.13.1'
+    implementation 'androidx.webkit:webkit:1.12.1'
+    implementation 'com.google.android.gms:play-services-code-scanner:16.1.0'
+}

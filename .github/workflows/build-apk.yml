@@ -1,0 +1,44 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build the APK
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleRelease
+          cp app/build/outputs/apk/release/app-release.apk Stride.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Stride-apk
+          path: Stride.apk
+
+      - name: Publish the APK as the "latest" release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest Stride.apk \
+            --target "${{ github.sha }}" \
+            --title "Stride (build ${{ github.run_number }})" \
+            --notes "Open this page on your Android phone, tap Stride.apk to download it, then open the file to install. New builds install over the old one and keep your data." \
+            --latest
