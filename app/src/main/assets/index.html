@@ -174,6 +174,8 @@ input:focus, select:focus, textarea:focus { outline: 2px solid color-mix(in srgb
 .hscroll > * { flex: none; }
 .rcard { width: 210px; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 6px; }
 .rcard .art { height: 92px; border-radius: 10px; display: grid; place-items: center; font-family: var(--display); font-size: 30px; font-weight: 700; color: #fff; }
+.thumb { width: 44px; height: 44px; border-radius: 8px; object-fit: contain; background: #fff; border: 1px solid var(--line); flex: none; }
+.hero-img { width: 100%; max-height: 220px; object-fit: contain; background: #fff; border-radius: 12px; border: 1px solid var(--line); padding: 8px; }
 
 </style>
 </head>
@@ -726,13 +728,13 @@ function sparkTotals() {
 }
 
 /* =================== Open Food Facts (works in the Android app; blocked inside claude.ai) =================== */
-const OFF_FIELDS = "code,product_name,product_name_en,brands,nutriments,product_quantity,quantity,serving_quantity";
+const OFF_FIELDS = "code,image_front_url,image_front_small_url,image_url,image_small_url,product_name,product_name_en,brands,nutriments,product_quantity,quantity,serving_quantity";
 function offToFood(p, code) {
   const n = p.nutriments || {}, g = (k) => { const v = n[k + "_100g"]; return v == null || v === "" || isNaN(+v) ? null : +v; };
   let kcal = g("energy-kcal"); if (kcal == null && g("energy") != null) kcal = g("energy") / 4.184;
   const name = (p.product_name_en || p.product_name || "").trim();
   if (kcal == null || !name) return null;
-  return { id: uid(), name, brand: (p.brands || "").split(",")[0].trim(), unit: /\d\s*(ml|cl|l)\b/i.test(p.quantity || "") ? "ml" : "g", size: +p.product_quantity || 0, servG: +p.serving_quantity || 0, barcode: String(code || p.code || ""), source: "off",
+  return { id: uid(), name, brand: (p.brands || "").split(",")[0].trim(), unit: /\d\s*(ml|cl|l)\b/i.test(p.quantity || "") ? "ml" : "g", size: +p.product_quantity || 0, servG: +p.serving_quantity || 0, barcode: String(code || p.code || ""), source: "off", img: p.image_front_url || p.image_url || "", imgS: p.image_front_small_url || p.image_small_url || p.image_front_url || "",
     per100: { kcal: r1(kcal), p: r1(g("proteins") || 0), c: r1(g("carbohydrates") || 0), s: r1(g("sugars") || 0), f: r1(g("fat") || 0), sf: r1(g("saturated-fat") || 0), fi: r1(g("fiber") || 0), salt: r1(g("salt") || 0) } };
 }
 async function offFetch(url) {
@@ -1009,7 +1011,7 @@ function viewDiary() {
     const n = sumN(items.map((x) => itemN(x.it)));
     return `<section class="card meal" aria-label="${label}"><div class="head"><div class="row"><span class="dot" style="background:${col}"></span><h3>${label}</h3><span class="small muted num" style="font-size:15px">${fmt(n.kcal)} kcal</span></div>
       <div class="row">${items.length ? `<button class="iconbtn" style="width:34px;height:34px" data-a="sheet" data-v="mealMenu" data-meal="${k}" aria-label="${label} options">${ic("more")}</button>` : ""}<button class="iconbtn" style="width:34px;height:34px" data-a="sheet" data-v="addFood" data-meal="${k}" aria-label="Add to ${label}">${ic("plus")}</button></div></div>
-      ${items.map(({ it, i }) => { const n = itemN(it); return `<button class="item" data-a="sheet" data-v="foodDetail" data-idx="${i}"><div class="grow"><div class="nm">${esc(it.name)}</div><div class="meta">${r1(it.g)}${it.unit || "g"}${it.brand ? " · " + esc(it.brand) : ""} · P ${r0(n.p)}g · Fi ${r1(n.fi)}g</div></div><span class="kc">${fmt(n.kcal)}</span></button>`; }).join("")}
+      ${items.map(({ it, i }) => { const n = itemN(it); return `<button class="item" data-a="sheet" data-v="foodDetail" data-idx="${i}">${thumb(it)}<div class="grow"><div class="nm">${esc(it.name)}</div><div class="meta">${r1(it.g)}${it.unit || "g"}${it.brand ? " · " + esc(it.brand) : ""} · P ${r0(n.p)}g · Fi ${r1(n.fi)}g</div></div><span class="kc">${fmt(n.kcal)}</span></button>`; }).join("")}
     </section>`;
   }).join("");
   return `${topbar("Food Diary")}<main class="stack">${datebar()}
@@ -1138,7 +1140,7 @@ function addItem(date, item) {
   const l = lib(); l.recent = [{ ...item, meal: undefined }, ...l.recent.filter((r) => r.name !== item.name)].slice(0, 40); setLib(l);
 }
 function foodFromGeneric(f) { return { name: f.name, per100: f.n, natural: f.natural, unit: f.unit, serv: f.serv, src: "generic", fid: f.id, cat: f.cat }; }
-function foodFromMine(f) { const serv = []; if (f.servG) serv.push([+f.servG, "1 serving"]); if (f.size) serv.push([+f.size, `pack (${f.size}${f.unit || "g"})`]); return { name: f.name, brand: f.brand, per100: f.per100, natural: false, unit: f.unit || "g", serv, src: "mine", fid: f.id, source: f.source }; }
+function foodFromMine(f) { const serv = []; if (f.servG) serv.push([+f.servG, "1 serving"]); if (f.size) serv.push([+f.size, `pack (${f.size}${f.unit || "g"})`]); return { name: f.name, brand: f.brand, per100: f.per100, natural: false, unit: f.unit || "g", serv, src: "mine", fid: f.id, source: f.source, barcode: f.barcode, img: f.img || "", imgS: f.imgS || f.img || "" }; }
 function recipeCookedG(r) { if (r.pot && r.pot.use && r.pot.full > r.pot.empty) return r.pot.full - r.pot.empty; if (r.cookedG > 0) return +r.cookedG; return r.ingredients.reduce((a, i) => a + i.g, 0); }
 function foodFromRecipe(r) {
   const tot = recipeTotals(r), cooked = recipeCookedG(r) || 1, per100 = {};
@@ -1164,10 +1166,12 @@ function searchFoods(q) {
   FOODS.forEach((f) => { if (match(f.name + " " + f.cat)) out.push({ src: "g", id: f.id, f: foodFromGeneric(f) }); });
   return out.slice(0, 60);
 }
+const safeImg = (u) => (/^https:\/\/[a-z0-9.-]*openfoodfacts\.(org|net)\//i.test(u || "") ? u : "");
+function thumb(f) { const u = safeImg(f.imgS || f.img); return u ? `<img class="thumb" src="${esc(u)}" alt="" loading="lazy" onerror="this.remove()">` : ""; }
 function resultRow(r, extra = "") {
   const f = r.f, s = f.serv && f.serv[0], n = s ? scaled(f.per100, s[0]) : f.per100;
   const badge = { off: '<span class="chip">Open Food Facts</span>', u: f.source === "off" ? '<span class="chip">Saved product</span>' : '<span class="chip warn">My food</span>', r: '<span class="chip pine">My recipe</span>', c: '<span class="chip pine">Recipe</span>', g: "", recent: "" }[r.src] || "";
-  return `<button class="item" data-a="pickFood" data-src="${r.src}" data-id="${esc(r.id)}" ${extra}><div class="grow"><div class="nm">${esc(f.name)}</div><div class="meta">${s ? esc(s[1]) : "100" + f.unit} · ${fmt(n.kcal)} kcal · P ${r1(n.p)}g</div></div>${badge}</button>`;
+  return `<button class="item" data-a="pickFood" data-src="${r.src}" data-id="${esc(r.id)}" ${extra}>${thumb(f)}<div class="grow"><div class="nm">${esc(f.name)}</div><div class="meta">${s ? esc(s[1]) : "100" + f.unit} · ${fmt(n.kcal)} kcal · P ${r1(n.p)}g</div></div>${badge}</button>`;
 }
 
 /* ----- Add food ----- */
@@ -1240,13 +1244,24 @@ SH.foodDetail = {
     const badges = [f.src === "generic" ? '<span class="chip">Typical values</span>' : "", f.src === "mine" ? (f.source === "off" ? '<span class="chip">Open Food Facts</span>' : '<span class="chip warn">My food</span>') : "", f.src === "recipe" || f.src === "curated" ? '<span class="chip pine">Recipe</span>' : "", isHighProtein(f.per100) ? '<span class="chip good">High protein</span>' : "", isHighFibre(f.per100) ? '<span class="chip good">High fibre</span>' : ""].join("");
     const servs = (f.serv || []).filter((x) => x[0] > 0);
     const alt = f.src === "generic" ? alternatives(f) : [];
-    return `<div><h2 style="font-size:24px">${esc(f.name)}</h2>${f.brand ? `<div class="muted small">${esc(f.brand)}</div>` : ""}<div class="row wrap" style="gap:6px;margin-top:6px">${badges}</div></div>
+    const big = safeImg(f.img || f.imgS);
+    return `${big ? `<img class="hero-img" src="${esc(big)}" alt="${esc(f.name)}" onerror="this.remove()">` : ""}<div><h2 style="font-size:24px">${esc(f.name)}</h2>${f.brand ? `<div class="muted small">${esc(f.brand)}</div>` : ""}<div class="row wrap" style="gap:6px;margin-top:6px">${badges}</div></div>
     <label class="field">Your serving (${f.unit || "g"})<input type="number" inputmode="decimal" id="fd-g" data-s="g" data-live value="${esc(s.g)}" min="0"></label>
     ${servs.length ? `<div class="row wrap" style="gap:6px">${servs.map(([sg, sl]) => `<button class="chip" style="border:0;cursor:pointer;padding:7px 11px" data-a="setServ" data-v="${r1(sg)}">${esc(sl)} · ${r1(sg)}${f.unit || "g"}</button>`).join("")}${servs.length === 1 ? `<button class="chip" style="border:0;cursor:pointer;padding:7px 11px" data-a="setServ" data-v="${r1(servs[0][0] / 2)}">Half</button><button class="chip" style="border:0;cursor:pointer;padding:7px 11px" data-a="setServ" data-v="${r1(servs[0][0] * 2)}">Double</button>` : ""}</div>` : ""}
     ${s.mode === "ing" ? "" : `<div class="seg" role="group" aria-label="Meal">${MEALS.map(([k, l]) => `<button class="${s.meal === k ? "on" : ""}" data-a="set" data-f="meal" data-v="${k}">${l}</button>`).join("")}</div>`}
     <div id="fd-live">${SH.foodDetail.liveHtml(s)}</div>
     ${alt.length ? `<div class="card stack" style="gap:6px"><h3>Food suggestions</h3><p class="small muted">Swaps with more nutrition for the calories.</p>${alt.map((a) => `<button class="item" style="padding:8px 0" data-a="swapFood" data-id="${a.id}"><div class="grow"><div class="nm">${esc(a.name)}</div><div class="meta">${fmt(a.n.kcal)} kcal · P ${a.n.p}g · Fi ${a.n.fi}g per 100${a.unit}</div></div>${ndBadge(scaled(a.n, 100, a.natural))}</button>`).join("")}</div>` : ""}
     ${s.mode === "edit" ? `<div class="grid3"><button class="btn sm" data-a="sheet" data-v="moveCopy" data-op="move" data-idx="${s.idx}">Move</button><button class="btn sm" data-a="sheet" data-v="moveCopy" data-op="copy" data-idx="${s.idx}">Copy</button><button class="btn sm danger" data-a="delItem">Delete</button></div>` : ""}`;
+  },
+  after(s) {
+    const f = s.food;
+    if (!NATIVE || s._imgTried || f.img || f.imgS || f.source !== "off" || !f.barcode) return;
+    s._imgTried = true; // products saved before photos were added: fetch the photo once and remember it
+    offLookup(f.barcode).then((off) => {
+      if (!off || !(off.img || off.imgS)) return;
+      const l = lib(), saved = l.foods.find((x) => x.barcode === f.barcode); if (saved) { saved.img = off.img; saved.imgS = off.imgS; setLib(l); }
+      f.img = off.img; f.imgS = off.imgS; if (topS() === s) refresh();
+    });
   },
   liveHtml(s) {
     const f = s.food, g = +s.g || 0, n = scaled(f.per100, g, f.natural);
@@ -1271,7 +1286,7 @@ on("setServ", (e) => { const s = topS(); s.g = e.v; const el = $("#fd-g"); if (e
 on("swapFood", (e) => { const s = topS(), f = FOODS.find((x) => x.id === e.id); s.food = foodFromGeneric(f); s.g = f.serv[0] ? f.serv[0][0] : 100; refresh(); });
 on("saveItem", () => {
   const s = topS(), g = +s.g; if (!(g > 0)) return toast("Enter a serving amount above 0.");
-  const f = s.food, item = { name: f.name, brand: f.brand || "", g: r1(g), unit: f.unit || "g", meal: s.meal, per100: f.per100, natural: !!f.natural, src: f.src, fid: f.fid || null, serv: f.serv || [] };
+  const f = s.food, item = { name: f.name, brand: f.brand || "", g: r1(g), unit: f.unit || "g", meal: s.meal, per100: f.per100, natural: !!f.natural, src: f.src, fid: f.fid || null, serv: f.serv || [], source: f.source, barcode: f.barcode, img: f.img || "", imgS: f.imgS || "" };
   if (s.mode === "ing") {
     const tgt = below("recipeEdit") || below("gotoEdit"); if (!tgt) return closeSheet();
     tgt.items = tgt.items || []; tgt.items.push({ ...item, meal: undefined });
