@@ -790,7 +790,7 @@ function datebar() {
     <div class="d">${niceDate(UI.date)}<div class="tiny muted">${parseKey(UI.date).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</div></div>
     <button class="iconbtn" data-a="date" data-v="1" aria-label="Next day">${ic("right")}</button></div>`;
 }
-on("date", (e) => { UI.date = addDays(UI.date, +e.v); rerender(); });
+on("date", (e) => { UI.date = addDays(UI.date, +e.v); rerender(); if (typeof HC !== "undefined") HC.syncRecent(); });
 const storageBanner = () => (NATIVE ? "" : Store.mode === "local" ? `<div class="banner">Saving on this device only. Open this page signed in to claude.ai to keep your data in your account.</div>` : Store.failed ? `<div class="banner">Some changes couldn't reach your account. A copy is saved on this device.</div>` : "");
 
 /* =================== Charts =================== */
@@ -951,7 +951,7 @@ function viewHome() {
     <div class="tiles">
       <button class="tile ${hit("weight") ? "hit" : ""}" data-a="sheet" data-v="logWeight"><span class="lbl">Weight</span><span class="val num">${wk ? showW(wk) : "Add"}</span><span class="sub">${wk ? "Logged" : "Weigh in today"}</span></button>
       <button class="tile ${hit("water") ? "hit" : ""}" data-a="sheet" data-v="logWater"><span class="lbl">Water</span><span class="val num">${fmt(d.water)}</span><span class="sub">of ${fmt(e.t.water)} ml</span></button>
-      <button class="tile ${hit("steps") ? "hit" : ""}" data-a="sheet" data-v="logSteps"><span class="lbl">Steps</span><span class="val num">${d.steps != null ? fmt(d.steps) : "Add"}</span><span class="sub">of ${fmt(e.t.steps)}</span></button>
+      <button class="tile ${hit("steps") ? "hit" : ""}" data-a="sheet" data-v="logSteps"><span class="lbl">Steps</span><span class="val num">${d.steps != null ? fmt(d.steps) : HC.ok() ? "0" : "Add"}</span><span class="sub">of ${fmt(e.t.steps)}${d.stepsSrc === "hc" ? " · synced" : ""}</span></button>
       <button class="tile ${hit("hunger") ? "hit" : ""}" data-a="sheet" data-v="logHunger"><span class="lbl">Hunger</span><span class="val" style="font-size:17px;font-weight:700">${d.hunger ? hungerLabels[d.hunger] : "Rate"}</span><span class="sub">${d.hunger ? "Rated" : "How hungry today?"}</span></button>
       <button class="tile ${hit("workout") ? "hit" : ""}" data-a="tab" data-v="train"><span class="lbl">Workout</span><span class="val" style="font-size:17px;font-weight:700">${p.workout.mode !== "yes" ? "Off" : wl ? "Done" : wdays ? "Today" : "Rest day"}</span><span class="sub">${wl ? esc(d.workouts[0].name) : wdays ? "Choose a workout" : "Recover and walk"}</span></button>
       <button class="tile ${hit("nutrient") ? "hit" : ""}" data-a="sheet" data-v="nutrition"><span class="lbl">Nutrients</span><span class="val" style="font-size:17px;font-weight:700">${e.band ? e.band.label : "–"}</span><span class="sub">Nutrient Score</span></button>
@@ -1096,6 +1096,8 @@ function viewMe() {
       ${[["personal", "Personal information", "Height, weight, age and activity"], ["conditions", "Health conditions", (p.conditions || []).length ? p.conditions.join(", ") : "None added"], ["meds", "Weight-loss medication", p.meds && p.meds.on ? `Yes, injection day ${DAYS_LONG[p.meds.injDay]}` : "Not taking any"], ["workoutPrefs", "Workout preferences", p.workout.mode === "yes" ? `${p.workout.days.length} days a week` : "Off"]].map(([v, t, m]) => `<button class="item" data-a="sheet" data-v="${v}"><div class="grow"><div class="nm">${t}</div><div class="meta">${esc(m)}</div></div>${ic("right", 'style="width:18px;color:var(--muted)"')}</button>`).join("")}</div>
     <div class="section-title"><h2>Settings</h2></div>
     <div class="card stack">
+      ${NATIVE && window.StrideNative.setReminder ? `<button class="btn" data-a="sheet" data-v="reminders">Daily reminders${Object.values((p.reminders || {})).filter((r) => r.on).length ? ` · ${Object.values(p.reminders).filter((r) => r.on).length} on` : ""}</button>` : ""}
+      ${NATIVE && window.StrideNative.healthStatus ? `<button class="btn" data-a="sheet" data-v="logSteps">Health Connect steps: ${p.health ? "On" : "Off"}</button>` : ""}
       <div class="row between"><span style="font-weight:600">Weight units</span><div class="seg" style="width:180px">${["kg", "lb", "st"].map((u) => `<button class="${wUnit() === u ? "on" : ""}" data-a="setUnit" data-v="${u}">${u}</button>`).join("")}</div></div>
       <div class="row between"><span style="font-weight:600">Appearance</span><div class="seg" style="width:220px">${[["system", "Device"], ["light", "Light"], ["dark", "Dark"]].map(([k, l]) => `<button class="${(p.theme || "system") === k ? "on" : ""}" data-a="setTheme" data-v="${k}">${l}</button>`).join("")}</div></div>
       <div class="small muted">${Store.mode === "cloud" ? "Your data is saved privately in your claude.ai account and follows you between devices." : NATIVE ? "Your data is saved on this phone. Make a backup now and then so you don't lose it if you change or reset your phone." : "Your data is saved in this browser only."}</div>
@@ -1532,12 +1534,21 @@ on("addWater", (e) => { const s = topS(); s.ml = clamp(+s.ml + +e.v, 0, 5000); $
 on("saveWater", () => { const s = topS(), d = day(s.date); d.water = +s.ml; setDay(s.date, d); toast("Water saved"); closeAll(); });
 
 SH.logSteps = {
-  init(s) { s.steps = day(s.date).steps ?? ""; },
+  init(s) { s.steps = day(s.date).steps ?? ""; if (HC.ok()) { s.syncing = true; HC.sync([s.date], () => { s.syncing = false; s.steps = day(s.date).steps ?? ""; if (topS() === s) refresh(); }); } },
   title: "Steps",
-  body: (s) => `<p class="small muted">Copy today's total from your phone's health app or your watch. Target ${fmt(dayTargets(s.date).steps)} steps.</p><label class="field">Steps<input type="number" inputmode="numeric" id="ls-steps" data-s="steps" value="${esc(s.steps)}"></label><p class="tiny muted">Automatic syncing from Health Connect or wearables needs a native app, so steps are entered by hand here.</p>`,
+  body: (s) => {
+    const d = day(s.date), src = d.stepsSrc === "hc";
+    let hc = "";
+    if (HC.native()) {
+      const st = HC.status();
+      hc = HC.ok() ? `<div class="card stack" style="gap:6px"><div class="row between"><strong>Health Connect</strong><span class="chip good">Connected</span></div><p class="small muted">${s.syncing ? "Syncing your steps…" : src ? "Steps sync automatically each time you open Stride." : "No steps found in Health Connect for this day yet."}</p><div class="row"><button class="btn sm" data-a="hcSyncNow">Sync now</button><button class="btn sm ghost" data-a="hcManage">Manage</button><button class="btn sm ghost danger" data-a="hcOff">Turn off</button></div></div>`
+        : `<div class="card stack" style="gap:6px"><strong>Get steps automatically</strong><p class="small muted">${st === "available" ? "Connect Health Connect to sync steps from your phone, watch or fitness apps such as Samsung Health, Fitbit, Garmin and Google Fit." : st === "update" ? "Health Connect needs updating from the Play Store before Stride can read your steps." : "Install Health Connect from the Play Store to sync steps from your phone and watch."}</p><button class="btn sm primary" data-a="hcConnect">${st === "available" ? "Connect Health Connect" : st === "update" ? "Update Health Connect" : "Get Health Connect"}</button></div>`;
+    }
+    return `${hc}<p class="small muted">${HC.ok() ? "Or enter a total by hand." : "Copy today's total from your phone's health app or your watch."} Target ${fmt(dayTargets(s.date).steps)} steps.</p><label class="field">Steps<input type="number" inputmode="numeric" id="ls-steps" data-s="steps" value="${esc(s.steps)}"></label>${HC.native() ? "" : `<p class="tiny muted">Automatic syncing from Health Connect works in the Stride Android app.</p>`}`;
+  },
   foot: (s) => `${day(s.date).steps != null ? `<button class="btn danger" data-a="delSteps">Delete</button>` : ""}<button class="btn primary grow" data-a="saveSteps">Save steps</button>`,
 };
-on("saveSteps", () => { const s = topS(), v = +s.steps; if (!(v >= 0 && v < 100000) || s.steps === "") return toast("Enter a step count."); const d = day(s.date); d.steps = r0(v); setDay(s.date, d); toast("Steps saved"); closeAll(); });
+on("saveSteps", () => { const s = topS(), v = +s.steps; if (!(v >= 0 && v < 100000) || s.steps === "") return toast("Enter a step count."); const d = day(s.date); if (d.steps !== r0(v)) d.stepsSrc = "manual"; d.steps = r0(v); setDay(s.date, d); toast("Steps saved"); closeAll(); });
 on("delSteps", () => { const s = topS(), d = day(s.date); d.steps = null; setDay(s.date, d); closeAll(); });
 
 const HUNGER = [[1, "Starving", "I'm starving, even after eating all my calories."], [2, "Peckish", "I'm peckish, even after eating all my calories."], [3, "Satisfied", "Not too full and not hungry."], [4, "Full", "Full but not uncomfortable."], [5, "Stuffed", "I'm struggling to finish my calories."]];
@@ -2032,6 +2043,80 @@ document.addEventListener("keydown", (ev) => {
   if (ev.key === "Escape" && UI.sheets.length) { closeSheet(); return; }
   if (ev.key === "Enter" && ev.target.id === "coach-in") { ev.preventDefault(); A.coachSend(); }
 });
+/* ----- Health Connect (Android app only) ----- */
+const HC = {
+  native: () => NATIVE && !!window.StrideNative.healthStatus,
+  status: () => { try { return window.StrideNative.healthStatus(); } catch { return "unavailable"; } },
+  ok: () => HC.native() && !!(P() && P().health),
+  waiting: {},
+  sync(dates, done) {
+    if (!HC.ok()) { if (done) done(); return; }
+    dates = [...new Set(dates)]; let left = dates.length;
+    dates.forEach((k) => { HC.waiting[k] = () => { if (--left <= 0 && done) done(); }; try { window.StrideNative.readSteps(k); } catch { HC.waiting[k](); } });
+  },
+  syncRecent() { if (!HC.ok()) return; const t = todayKey(), ks = [t, addDays(t, -1)]; if (UI.date < t && UI.date >= addDays(t, -30) && !ks.includes(UI.date)) ks.push(UI.date); HC.sync(ks); },
+};
+window.onNativeSteps = (payload) => {
+  const i = payload.indexOf("|"), k = payload.slice(0, i), v = payload.slice(i + 1), cb = HC.waiting[k]; delete HC.waiting[k];
+  if (/^\d+$/.test(v)) {
+    const n = +v, d = day(k);
+    // Health Connect is the source of truth unless you typed a bigger number yourself
+    if (n > 0 && (d.steps == null || d.stepsSrc === "hc" || n > d.steps) && d.steps !== n) { d.steps = n; d.stepsSrc = "hc"; setDay(k, d); if (!UI.sheets.length) rerender(); }
+  } else if (v.startsWith("error:") && /permission|security/i.test(v)) { const p = P(); p.health = false; setP(p); toast("Stride no longer has access to your steps in Health Connect."); }
+  if (cb) cb();
+};
+on("hcConnect", () => { const st = HC.status(); if (st === "available") window.StrideNative.requestHealth(); else window.StrideNative.openHealthConnect(); });
+window.onHealthPermission = (r) => {
+  const p = P(); if (!p) return;
+  if (r === "granted") { p.health = true; setP(p); toast("Connected. Your steps will sync automatically."); const s = topS(); HC.sync([todayKey(), addDays(todayKey(), -1), ...(s && s.date ? [s.date] : [])], () => { const s2 = topS(); if (s2 && s2.kind === "logSteps") { s2.steps = day(s2.date).steps ?? ""; refresh(); } else rerender(); }); }
+  else toast("Stride wasn't given access to your steps. You can try again or enter them by hand.");
+  if (topS() && topS().kind === "logSteps") refresh();
+};
+on("hcSyncNow", () => { const s = topS(); s.syncing = true; refresh(); HC.sync([s.date], () => { s.syncing = false; s.steps = day(s.date).steps ?? ""; if (topS() === s) refresh(); toast("Steps synced"); }); });
+on("hcManage", () => window.StrideNative.openHealthConnect());
+on("hcOff", () => { const p = P(); p.health = false; setP(p); toast("Step syncing turned off. To remove access completely, use Manage in Health Connect."); refresh(); });
+
+/* ----- Daily reminders (Android app only) ----- */
+const REMINDERS = [
+  ["weight", "Weigh in", "07:30", "Time to weigh in", "Weigh yourself after the toilet, before you eat or drink anything."],
+  ["food", "Log your food", "13:00", "Have you logged your food?", "Add breakfast and lunch to your diary while you remember."],
+  ["hunger", "Rate your hunger", "20:30", "How hungry were you today?", "Rate your hunger to tick off today's target."],
+  ["steps", "Log your steps", "21:30", "Log today's steps", "Add your step count before bed."],
+];
+const remState = () => (P() && P().reminders) || {};
+SH.reminders = {
+  init(s) { const r = remState(); s.r = {}; REMINDERS.forEach(([id, , t]) => { s.r[id] = { on: !!(r[id] && r[id].on), time: (r[id] && r[id].time) || t }; }); },
+  title: "Daily reminders",
+  body(s) {
+    const notif = (() => { try { return window.StrideNative.notificationsEnabled(); } catch { return true; } })();
+    return `<p class="small muted">A notification at the same time each day. Tap it to go straight to the right screen.</p>
+    ${!notif && Object.values(s.r).some((x) => x.on) ? `<div class="banner">Notifications are off for Stride. Saving will ask to turn them on.</div>` : ""}
+    <div class="card list" style="padding:0">${REMINDERS.map(([id, label, , , text]) => `<div class="item" style="cursor:default;gap:12px"><label class="check grow" style="align-items:center"><input type="checkbox" data-a="remToggle" data-id="${id}" ${s.r[id].on ? "checked" : ""}><span><span class="nm">${label}</span><br><span class="meta">${id === "steps" && HC.ok() ? "Steps sync from Health Connect, so you may not need this." : esc(text)}</span></span></label><input type="time" id="rem-${id}" data-rem="${id}" value="${s.r[id].time}" style="width:136px;flex:none" aria-label="${label} time"></div>`).join("")}</div>
+    <p class="tiny muted">Phones in battery-saving mode can deliver reminders a few minutes late.</p>`;
+  },
+  foot: () => `<button class="btn primary block" data-a="saveReminders">Save reminders</button>`,
+};
+on("remToggle", (e, el) => { topS().r[e.id].on = el.checked; });
+document.addEventListener("change", (ev) => { const el = ev.target; if (el.dataset && el.dataset.rem) { const s = topS(); if (s && s.kind === "reminders") s.r[el.dataset.rem].time = el.value || s.r[el.dataset.rem].time; } });
+on("saveReminders", () => {
+  const s = topS(), p = P(); p.reminders = s.r; setP(p);
+  REMINDERS.forEach(([id, , , title, text]) => { const r = s.r[id], [h, m] = r.time.split(":").map(Number); try { window.StrideNative.setReminder(id, h || 0, m || 0, !!r.on, title, text); } catch {} });
+  const any = Object.values(s.r).some((x) => x.on);
+  let notif = true; try { notif = window.StrideNative.notificationsEnabled(); } catch {}
+  if (any && !notif) window.StrideNative.requestNotifications(); else toast(any ? "Reminders saved" : "Reminders turned off");
+  closeAll();
+});
+window.onNotifyPermission = (r) => toast(r === "granted" ? "Reminders saved" : r === "settings" ? "Turn on notifications for Stride, then your reminders will work." : "Reminders are saved, but they won't show until you allow notifications for Stride.");
+
+/* ----- Opening from a notification, and coming back to the app ----- */
+window.onNativeOpen = (id) => {
+  if (!Store.ready || !P() || !P().targets) { UI.pendingOpen = id; return; }
+  UI.sheets = []; UI.tab = "home"; UI.homeTab = "today"; UI.date = todayKey(); render();
+  const map = { weight: "logWeight", steps: "logSteps", hunger: "logHunger", food: "addFood" };
+  if (map[id]) openSheet(map[id], id === "food" ? { meal: defaultMeal() } : {});
+};
+window.onNativeResume = () => { if (!Store.ready) return; if (UI.date !== todayKey() && UI.date === addDays(todayKey(), -1) && !UI.sheets.length) { UI.date = todayKey(); rerender(); } HC.syncRecent(); };
+
 window.strideBack = () => {
   if (UI.sheets.length) { closeSheet(); return true; }
   if (UI.onb && UI.onb.step > 0) { A.onbBack(); return true; }
@@ -2047,6 +2132,8 @@ async function start() {
   const p = P();
   if (p && p.targets && !p.customTargets) { const t = calcTargets(p); if (Math.abs(t.kcal - p.targets.kcal) >= 50) { p.targets = t; setP(p); } }
   Store.ready = true; applyTheme(); render();
+  if (UI.pendingOpen) { const id = UI.pendingOpen; UI.pendingOpen = null; window.onNativeOpen(id); }
+  HC.syncRecent();
 }
 start();
 

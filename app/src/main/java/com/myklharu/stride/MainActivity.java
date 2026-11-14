@@ -1,6 +1,10 @@
 package com.myklharu.stride;
 
+import android.Manifest;
 import android.app.Activity;
+import android.app.NotificationManager;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.res.Configuration;
@@ -38,6 +42,9 @@ import java.io.File;
 public class MainActivity extends Activity {
     private static final String HOME = "https://appassets.androidplatform.net/assets/index.html";
     private static final int FILE_REQUEST = 41;
+    private static final int HEALTH_REQUEST = 42;
+    private static final int NOTIFY_REQUEST = 43;
+    private String pendingOpen;
 
     private WebView web;
     private ValueCallback<Uri[]> fileCallback;
@@ -76,6 +83,14 @@ public class MainActivity extends Activity {
             }
 
             @Override
+            public void onPageFinished(WebView view, String url) {
+                if (pendingOpen != null) {
+                    callJs("onNativeOpen", pendingOpen);
+                    pendingOpen = null;
+                }
+            }
+
+            @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
                 if ("appassets.androidplatform.net".equals(uri.getHost())) return false;
@@ -95,6 +110,7 @@ public class MainActivity extends Activity {
         });
 
         web.addJavascriptInterface(new Bridge(), "StrideNative");
+        pendingOpen = getIntent() != null ? getIntent().getStringExtra("open") : null;
 
         if (savedInstanceState != null) web.restoreState(savedInstanceState);
         else web.loadUrl(HOME);
@@ -137,7 +153,32 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        String open = intent.getStringExtra("open");
+        if (open != null) callJs("onNativeOpen", open);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
+        if (requestCode == NOTIFY_REQUEST) {
+            boolean ok = results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED;
+            callJs("onNotifyPermission", ok ? "granted" : "denied");
+        }
+    }
+
+    @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == HEALTH_REQUEST) {
+            boolean ok;
+            try {
+                ok = HealthBridge.wasGranted(resultCode, data);
+            } catch (Exception e) {
+                ok = false;
+            }
+            callJs("onHealthPermission", ok ? "granted" : "denied");
+            return;
+        }
         if (requestCode != FILE_REQUEST || fileCallback == null) {
             super.onActivityResult(requestCode, resultCode, data);
             return;
@@ -185,6 +226,105 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public String healthStatus() {
+            try {
+                return HealthBridge.status(MainActivity.this);
+            } catch (Throwable t) {
+                return "unavailable";
+            }
+        }
+
+        @JavascriptInterface
+        public void healthCheck() {
+            try {
+                HealthBridge.hasPermission(MainActivity.this, result -> callJs("onHealthCheck", result));
+            } catch (Throwable t) {
+                callJs("onHealthCheck", "false");
+            }
+        }
+
+        @JavascriptInterface
+        public void requestHealth() {
+            runOnUiThread(() -> {
+                try {
+                    startActivityForResult(HealthBridge.permissionIntent(MainActivity.this), HEALTH_REQUEST);
+                } catch (Throwable t) {
+                    callJs("onHealthPermission", "denied");
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void readSteps(String isoDate) {
+            try {
+                HealthBridge.readSteps(MainActivity.this, isoDate, result -> callJs("onNativeSteps", isoDate + "|" + result));
+            } catch (Throwable t) {
+                callJs("onNativeSteps", isoDate + "|error:unavailable");
+            }
+        }
+
+        @JavascriptInterface
+        public void openHealthConnect() {
+            runOnUiThread(() -> {
+                String status = HealthBridge.status(MainActivity.this);
+                Intent i;
+                if ("available".equals(status)) {
+                    i = new Intent(Build.VERSION.SDK_INT >= 34 ? "android.health.connect.action.HEALTH_HOME_SETTINGS" : "androidx.health.ACTION_HEALTH_CONNECT_SETTINGS");
+                } else {
+                    i = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.android.apps.healthdata&url=healthconnect%3A%2F%2Fonboarding"));
+                    i.setPackage("com.android.vending");
+                }
+                try {
+                    startActivity(i);
+                } catch (ActivityNotFoundException e) {
+                    try {
+                        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.google.android.apps.healthdata")));
+                    } catch (ActivityNotFoundException ignored) {
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public boolean notificationsEnabled() {
+            NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            boolean perm = Build.VERSION.SDK_INT < 33 || checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED;
+            return perm && nm != null && nm.areNotificationsEnabled();
+        }
+
+        @JavascriptInterface
+        public void requestNotifications() {
+            runOnUiThread(() -> {
+                if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                    requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, NOTIFY_REQUEST);
+                } else {
+                    NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                    if (nm != null && !nm.areNotificationsEnabled()) {
+                        Intent i = new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+                        i.putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, getPackageName());
+                        try {
+                            startActivity(i);
+                        } catch (ActivityNotFoundException ignored) {
+                        }
+                        callJs("onNotifyPermission", "settings");
+                    } else {
+                        callJs("onNotifyPermission", "granted");
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void setReminder(String id, int hour, int minute, boolean on, String title, String text) {
+            Reminders.set(MainActivity.this, id, hour, minute, on, title, text);
+        }
+
+        @JavascriptInterface
+        public String getReminders() {
+            return Reminders.all(MainActivity.this);
+        }
+
+        @JavascriptInterface
         public void share(String text, String subject) {
             runOnUiThread(() -> {
                 Intent send = new Intent(Intent.ACTION_SEND);
@@ -223,5 +363,6 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         web.onResume();
+        callJs("onNativeResume", "");
     }
 }
