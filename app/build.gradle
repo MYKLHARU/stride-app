@@ -7,7 +7,7 @@ def buildNumber = (System.getenv("GITHUB_RUN_NUMBER") ?: "1") as Integer
 
 android {
     namespace 'com.myklharu.stride'
-    compileSdk 35
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.myklharu.stride"
