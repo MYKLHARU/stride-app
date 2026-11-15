@@ -16,6 +16,6 @@ To build locally, open the folder in Android Studio and choose **Build > Build A
 
 ## Notes
 
-- Product data comes from [Open Food Facts](https://uk.openfoodfacts.org), available under the Open Database Licence.
+- Packaged products come from [Open Food Facts](https://uk.openfoodfacts.org) (Open Database Licence). Everyday foods come from McCance and Widdowson's Composition of Foods Integrated Dataset 2021: contains public sector information licensed under the Open Government Licence v3.0.
 - `app/stride.keystore` signs the app so updates install over each other. It is only for this personal app. If you ever publish the app, make a new key and keep it out of the repository.
 - Stride gives general guidance, not medical advice.
