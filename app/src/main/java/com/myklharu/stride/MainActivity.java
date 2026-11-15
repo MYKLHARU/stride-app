@@ -55,7 +55,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         boolean night = (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
         web = new WebView(this);
-        web.setBackgroundColor(Color.parseColor(night ? "#0E1412" : "#F1F3F0"));
+        web.setBackgroundColor(Color.parseColor(night ? "#1E1F22" : "#F1F3F0"));
         applyBars(night);
         setContentView(web);
 
@@ -195,12 +195,12 @@ public class MainActivity extends Activity {
     /** Status and navigation bars follow the app's light or dark look. */
     @SuppressWarnings("deprecation")
     private void applyBars(boolean dark) {
-        getWindow().setStatusBarColor(Color.parseColor(dark ? "#0E1412" : "#F1F3F0"));
-        getWindow().setNavigationBarColor(Color.parseColor(dark ? "#172019" : "#FFFFFF"));
+        getWindow().setStatusBarColor(Color.parseColor(dark ? "#1E1F22" : "#F1F3F0"));
+        getWindow().setNavigationBarColor(Color.parseColor(dark ? "#2A2B2F" : "#FFFFFF"));
         int flags = getWindow().getDecorView().getSystemUiVisibility();
         int light = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
         getWindow().getDecorView().setSystemUiVisibility(dark ? (flags & ~light) : (flags | light));
-        if (web != null) web.setBackgroundColor(Color.parseColor(dark ? "#0E1412" : "#F1F3F0"));
+        if (web != null) web.setBackgroundColor(Color.parseColor(dark ? "#1E1F22" : "#F1F3F0"));
     }
 
     private void callJs(String fn, String value) {

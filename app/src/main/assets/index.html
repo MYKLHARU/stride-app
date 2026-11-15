@@ -21,15 +21,15 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0E1412; --card: #172019; --ink: #E7EEEA; --muted: #93A29C; --line: #26322D; --soft: #1E2924;
-    --accent: #FF7A50; --accent-ink: #1A0D08; --pine: #5CC4A6; --good: #4CC98D; --warn: #E7B13C; --bad: #FF7660;
+    --bg: #1E1F22; --card: #2A2B2F; --ink: #ECEDEF; --muted: #A4A7AD; --line: #3A3C41; --soft: #34363B;
+    --accent: #FF7A50; --accent-ink: #1A0D08; --pine: #6CC9AE; --good: #4CC98D; --warn: #E7B13C; --bad: #FF7660;
     --c-kcal: #FF7A50; --c-pro: #6FA8E8; --c-fib: #4CC98D; --c-carb: #E7B13C; --c-fat: #B39AF0;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0E1412; --card: #172019; --ink: #E7EEEA; --muted: #93A29C; --line: #26322D; --soft: #1E2924;
-  --accent: #FF7A50; --accent-ink: #1A0D08; --pine: #5CC4A6; --good: #4CC98D; --warn: #E7B13C; --bad: #FF7660;
+  --bg: #1E1F22; --card: #2A2B2F; --ink: #ECEDEF; --muted: #A4A7AD; --line: #3A3C41; --soft: #34363B;
+  --accent: #FF7A50; --accent-ink: #1A0D08; --pine: #6CC9AE; --good: #4CC98D; --warn: #E7B13C; --bad: #FF7660;
   --c-kcal: #FF7A50; --c-pro: #6FA8E8; --c-fib: #4CC98D; --c-carb: #E7B13C; --c-fat: #B39AF0;
   color-scheme: dark;
 }
@@ -190,8 +190,8 @@ input:focus, select:focus, textarea:focus { outline: 2px solid color-mix(in srgb
 .pills { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 .pill { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 5px 4px 7px; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
 .pill .pl { background: var(--c); color: #fff; font-size: 11px; font-weight: 700; border-radius: 7px; padding: 2px 0; width: 100%; text-align: center; }
-:root[data-theme="dark"] .pill .pl { color: #0E1412; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pill .pl { color: #0E1412; } }
+:root[data-theme="dark"] .pill .pl { color: #1E1F22; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pill .pl { color: #1E1F22; } }
 .pill .pv { font-size: 19px; line-height: 1.1; margin-top: 2px; }
 .pill .pv small { font-size: 12px; margin-left: 1px; }
 .pill .pt { font-size: 11px; color: var(--muted); white-space: nowrap; }
