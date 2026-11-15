@@ -1,0 +1,50 @@
+name: Build UK food database
+
+# Monthly refresh of the offline UK product list from Open Food Facts (ODbL).
+on:
+  schedule:
+    - cron: "17 3 2 * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [scripts/build_food_db.py, .github/workflows/food-db.yml]
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download Open Food Facts and keep clean UK products
+        run: python scripts/build_food_db.py out
+
+      - name: Package
+        run: |
+          cd out && zip -q -r ../food-db.zip . && cd ..
+          ls -la food-db.zip
+          cp out/meta.json meta.json
+
+      - name: Publish as the "food-db" release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete food-db --yes --cleanup-tag || true
+          gh release create food-db food-db.zip meta.json \
+            --target "${{ github.sha }}" \
+            --title "UK food database ($(date +%Y-%m-%d))" \
+            --notes "Offline UK product list built from Open Food Facts (Open Database Licence). Used when building Stride.apk." \
+            --latest=false
+
+      - name: Rebuild the APK with the new data
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run build-apk.yml --ref main

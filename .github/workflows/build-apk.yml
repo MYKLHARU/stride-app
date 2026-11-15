@@ -21,6 +21,18 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v5
 
+      - name: Add the offline UK food database (if one has been built)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p app/src/main/assets/offdb
+          if gh release download food-db -p food-db.zip -D /tmp/fdb; then
+            unzip -q -o /tmp/fdb/food-db.zip -d app/src/main/assets/offdb
+            cat app/src/main/assets/offdb/meta.json
+          else
+            echo "No food database release yet; building without it."
+          fi
+
       - name: Build the APK
         run: |
           chmod +x gradlew
