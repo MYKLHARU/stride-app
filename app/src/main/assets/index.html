@@ -673,6 +673,17 @@ function ndScore(n) {
 const ND_BANDS = [[80, "Excellent", "var(--good)"], [45, "Good", "var(--pine)"], [25, "OK", "var(--warn)"], [10, "Poor", "#D9822B"], [-Infinity, "Very low", "var(--bad)"]];
 function ndBand(score) { if (score == null) return null; const b = ND_BANDS.find((b) => score >= b[0]); return { label: b[1], color: b[2], rank: 4 - ND_BANDS.indexOf(b) }; }
 function ndBadge(n) { const b = ndBand(ndScore(n)); return b ? `<span class="nd"><i style="background:${b.color}"></i>${b.label}</span>` : `<span class="nd muted">No rating</span>`; }
+// Spots nutrition values that can't be right (common in crowd-sourced product data)
+function nutritionProblems(n) {
+  if (!n) return [];
+  const out = [], est = (n.p || 0) * 4 + (n.c || 0) * 4 + (n.f || 0) * 9 + (n.fi || 0) * 2;
+  if ((n.sf || 0) > (n.f || 0) + 0.5) out.push("saturated fat is higher than total fat");
+  if ((n.s || 0) > (n.c || 0) + 0.5) out.push("sugars are higher than total carbs");
+  if ((n.p || 0) + (n.c || 0) + (n.f || 0) + (n.fi || 0) > 105) out.push("the nutrients add up to more than 100g");
+  if (n.kcal > 0 && est > n.kcal * 1.4 + 10) out.push(`the protein, carbs and fat add up to about ${Math.round(est)} kcal, but only ${Math.round(n.kcal)} kcal is listed`);
+  else if (est > 0 && n.kcal > est * 1.6 + 25) out.push(`${Math.round(n.kcal)} kcal is listed, but the protein, carbs and fat only add up to about ${Math.round(est)} kcal`);
+  return out;
+}
 const isHighProtein = (per100) => per100.kcal > 0 && (per100.p * 4) / per100.kcal >= 0.25 && per100.p >= 8;
 const isHighFibre = (per100) => per100.fi >= 6;
 
@@ -1301,17 +1312,20 @@ SH.foodDetail = {
   },
   title: (s) => (s.mode === "edit" ? "Edit food" : "Add your food"),
   body(s) {
-    const f = s.food, g = +s.g || 0, n = scaled(f.per100, g, f.natural);
-    const badges = [f.src === "generic" ? '<span class="chip">Typical values</span>' : "", f.src === "mine" ? (f.source === "off" ? '<span class="chip">Open Food Facts</span>' : '<span class="chip warn">My food</span>') : "", f.src === "recipe" || f.src === "curated" ? '<span class="chip pine">Recipe</span>' : "", isHighProtein(f.per100) ? '<span class="chip good">High protein</span>' : "", isHighFibre(f.per100) ? '<span class="chip good">High fibre</span>' : ""].join("");
+    const f = s.food, g = +s.g || 0, n = scaled(f.per100, g, f.natural), probs = nutritionProblems(f.per100);
+    const canFix = f.src === "mine" || (s.mode === "edit" && f.src !== "generic");
+    const warn = probs.length ? `<div class="banner stack" style="gap:6px"><strong>These nutrition values look wrong</strong><span>${f.source === "off" ? "Open Food Facts is edited by the public, and this product's entry has a mistake: " : "Something doesn't add up: "}${esc(probs.join("; "))}. Check the packet before you rely on them.</span>${canFix ? `<button class="btn sm" style="align-self:flex-start" data-a="fixFood">Fix the values</button>` : ""}${f.source === "off" && f.barcode ? `<a class="small" href="https://world.openfoodfacts.org/product/${encodeURIComponent(f.barcode)}" target="_blank" rel="noopener">Correct it on Open Food Facts for everyone</a>` : ""}</div>` : "";
+    const badges = [f.src === "generic" ? '<span class="chip">Typical values</span>' : "", f.src === "mine" ? (f.source === "off" ? '<span class="chip">Open Food Facts</span>' : '<span class="chip warn">My food</span>') : "", f.src === "recipe" || f.src === "curated" ? '<span class="chip pine">Recipe</span>' : "", !probs.length && isHighProtein(f.per100) ? '<span class="chip good">High protein</span>' : "", !probs.length && isHighFibre(f.per100) ? '<span class="chip good">High fibre</span>' : "", probs.length ? '<span class="chip bad">Check values</span>' : ""].join("");
     const servs = (f.serv || []).filter((x) => x[0] > 0);
     const alt = f.src === "generic" ? alternatives(f) : [];
     const big = safeImg(f.img || f.imgS);
-    return `${big ? `<img class="hero-img" src="${esc(big)}" alt="${esc(f.name)}" onerror="this.remove()">` : ""}<div><h2 style="font-size:24px">${esc(f.name)}</h2>${f.brand ? `<div class="muted small">${esc(f.brand)}</div>` : ""}<div class="row wrap" style="gap:6px;margin-top:6px">${badges}</div></div>
+    return `${big ? `<img class="hero-img" src="${esc(big)}" alt="${esc(f.name)}" onerror="this.remove()">` : ""}<div><h2 style="font-size:24px">${esc(f.name)}</h2>${f.brand ? `<div class="muted small">${esc(f.brand)}</div>` : ""}<div class="row wrap" style="gap:6px;margin-top:6px">${badges}</div></div>${warn}
     <label class="field">Your serving (${f.unit || "g"})<input type="number" inputmode="decimal" id="fd-g" data-s="g" data-live value="${esc(s.g)}" min="0"></label>
     ${servs.length ? `<div class="row wrap" style="gap:6px">${servs.map(([sg, sl]) => `<button class="chip" style="border:0;cursor:pointer;padding:7px 11px" data-a="setServ" data-v="${r1(sg)}">${esc(sl)} · ${r1(sg)}${f.unit || "g"}</button>`).join("")}${servs.length === 1 ? `<button class="chip" style="border:0;cursor:pointer;padding:7px 11px" data-a="setServ" data-v="${r1(servs[0][0] / 2)}">Half</button><button class="chip" style="border:0;cursor:pointer;padding:7px 11px" data-a="setServ" data-v="${r1(servs[0][0] * 2)}">Double</button>` : ""}</div>` : ""}
     ${s.mode === "ing" ? "" : `<div class="seg" role="group" aria-label="Meal">${MEALS.map(([k, l]) => `<button class="${s.meal === k ? "on" : ""}" data-a="set" data-f="meal" data-v="${k}">${l}</button>`).join("")}</div>`}
     <div id="fd-live">${SH.foodDetail.liveHtml(s)}</div>
     ${alt.length ? `<div class="card stack" style="gap:6px"><h3>Food suggestions</h3><p class="small muted">Swaps with more nutrition for the calories.</p>${alt.map((a) => `<button class="item" style="padding:8px 0" data-a="swapFood" data-id="${a.id}"><div class="grow"><div class="nm">${esc(a.name)}</div><div class="meta">${fmt(a.n.kcal)} kcal · P ${a.n.p}g · Fi ${a.n.fi}g per 100${a.unit}</div></div>${ndBadge(scaled(a.n, 100, a.natural))}</button>`).join("")}</div>` : ""}
+    ${f.src === "mine" && !probs.length ? `<button class="btn sm ghost" style="align-self:flex-start" data-a="fixFood">Edit this food's nutrition</button>` : ""}
     ${s.mode === "edit" ? `<div class="grid3"><button class="btn sm" data-a="sheet" data-v="moveCopy" data-op="move" data-idx="${s.idx}">Move</button><button class="btn sm" data-a="sheet" data-v="moveCopy" data-op="copy" data-idx="${s.idx}">Copy</button><button class="btn sm danger" data-a="delItem">Delete</button></div>` : ""}`;
   },
   after(s) {
@@ -1423,10 +1437,14 @@ on("doQuickAdd", () => {
 const NFIELDS = [["kcal", "Energy (kcal)", true], ["p", "Protein (g)", true], ["c", "Carbohydrate (g)", true], ["s", "of which sugars (g)", false], ["f", "Fat (g)", true], ["sf", "of which saturates (g)", false], ["fi", "Fibre (g)", false], ["salt", "Salt (g)", false]];
 SH.createFood = {
   full: true,
-  init(s) { s.unit = s.unit || "g"; },
-  title: "Create a food",
+  init(s) {
+    s.unit = s.unit || "g";
+    if (s.editFood) { const f = s.editFood; Object.assign(s, { name: f.name, brand: f.brand || "", unit: f.unit || "g", size: f.size || "", barcode: f.barcode || "" }); for (const [k] of NFIELDS) s["n_" + k] = f.per100[k] ?? ""; }
+  },
+  title: (s) => (s.editFood ? "Fix nutrition values" : "Create a food"),
   body(s) {
-    return `<p class="small muted">Copy the details from the back of the packet. Use the per 100g (or 100ml) column.</p>
+    const probs = s.editFood ? nutritionProblems(Object.fromEntries(NFIELDS.map(([k]) => [k, +s["n_" + k] || 0]))) : [];
+    return `<p class="small muted">${s.editFood ? "Copy the numbers from the packet's per 100g (or 100ml) column. Your corrected version is used every time you scan or search for this product. Past diary entries stay as they were, apart from the one you opened this from." : "Copy the details from the back of the packet. Use the per 100g (or 100ml) column."}</p>${probs.length ? `<div class="banner">Still looks wrong: ${esc(probs.join("; "))}.</div>` : ""}
     ${Store.sample && Store.imagesOK ? `<div class="card flat stack" style="gap:8px"><div style="font-weight:700">Read the label for me</div><p class="small muted">Take a photo of the nutrition table and the AI fills in the form. Check the numbers before saving.</p><label class="btn sm" style="align-self:flex-start">${ic("camera")} Photo of label<input type="file" accept="image/*" capture="environment" data-file="labelPhoto" hidden></label>${s.reading ? `<div class="small muted">Reading the label…</div>` : ""}</div>` : ""}
     <label class="field">Food name*<input type="text" id="cf-name" data-s="name" value="${esc(s.name || "")}"></label>
     <label class="field">Brand<input type="text" id="cf-brand" data-s="brand" value="${esc(s.brand || "")}"></label>
@@ -1436,14 +1454,32 @@ SH.createFood = {
     <div class="grid2">${NFIELDS.map(([k, l, req]) => `<label class="field">${l}${req ? "*" : ""}<input type="number" inputmode="decimal" id="cf-${k}" data-s="n_${k}" value="${esc(s["n_" + k] ?? "")}"></label>`).join("")}</div>
     ${s.warn ? `<div class="banner">The calories don't match the protein, carbs and fat you entered. Check them against the packet.</div><label class="check"><input type="checkbox" id="cf-confirm" data-s="confirm" ${s.confirm ? "checked" : ""}> I've checked and these match the packet</label>` : ""}`;
   },
-  foot: () => `<button class="btn primary block" data-a="saveFood">Create food</button>`,
+  foot: (s) => `<button class="btn primary block" data-a="saveFood">${s.editFood ? "Save corrected values" : "Create food"}</button>`,
 };
+on("fixFood", () => {
+  const s = topS(), f = s.food, l = lib();
+  const saved = (f.fid && l.foods.find((x) => x.id === f.fid)) || (f.barcode && l.foods.find((x) => x.barcode === f.barcode));
+  openSheet("createFood", { editFood: saved || { name: f.name, brand: f.brand, unit: f.unit, per100: f.per100, barcode: f.barcode }, editId: saved ? saved.id : null, meal: s.meal, date: s.date });
+});
 on("saveFood", () => {
   const s = topS(), name = (s.name || "").trim(); if (!name) return toast("Enter a food name.");
   const n = {}; for (const [k, , req] of NFIELDS) { const v = s["n_" + k]; if (req && (v === undefined || v === "")) return toast("Fill in energy, protein, carbohydrate and fat."); n[k] = +v || 0; }
   if (n.kcal > 900 || n.p > 100 || n.c > 100 || n.f > 100) return toast("Those values are too high for 100g. Check the per 100g column.");
+  if (n.sf > n.f + 0.5) return toast("Saturated fat can't be more than total fat. Check the packet.");
+  if (n.s > n.c + 0.5) return toast("Sugars can't be more than total carbohydrate. Check the packet.");
   const est = n.p * 4 + n.c * 4 + n.f * 9 + n.fi * 2;
   if (n.kcal > 20 && Math.abs(est - n.kcal) / n.kcal > 0.25 && !s.confirm) { s.warn = true; refresh(); return; }
+  if (s.editFood) {
+    const l = lib(), fixed = { ...(s.editFood || {}), id: s.editId || uid(), name, brand: (s.brand || "").trim(), unit: s.unit || "g", size: +s.size || 0, barcode: (s.barcode || "").trim(), per100: n, edited: true };
+    const i = l.foods.findIndex((x) => x.id === fixed.id); if (i >= 0) l.foods[i] = fixed; else l.foods.unshift(fixed); setLib(l);
+    UI.sheets.pop();
+    const det = topS();
+    if (det && det.kind === "foodDetail") {
+      det.food = { ...det.food, ...foodFromMine(fixed), meal: det.food.meal };
+      if (det.mode === "edit") { const d = day(det.date); if (d.food[det.idx]) { d.food[det.idx] = { ...d.food[det.idx], name: fixed.name, brand: fixed.brand, per100: n, src: "mine", fid: fixed.id }; setDay(det.date, d); } }
+    }
+    toast("Nutrition values corrected"); renderSheet(); return;
+  }
   const f = { id: uid(), name, brand: (s.brand || "").trim(), unit: s.unit || "g", size: +s.size || 0, barcode: (s.barcode || "").trim(), per100: n };
   const l = lib(); l.foods.unshift(f); setLib(l); toast("Food created");
   const meal = s.meal || defaultMeal(), date = s.date, wantIng = !!below("recipeEdit") || !!below("gotoEdit");
