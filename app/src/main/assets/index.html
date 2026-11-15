@@ -1269,7 +1269,7 @@ SH.addFood = {
     ${s.q ? "" : `<div class="seg">${tabs.map(([k, l]) => `<button class="${s.tab === k ? "on" : ""}" data-a="set" data-f="tab" data-v="${k}">${l}</button>`).join("")}</div>`}
     <div id="food-results" class="card list" style="padding:0">${SH.addFood.results(s)}</div>`;
   },
-  results(s) {
+  __base(s) {
     if (s.q.trim()) {
       const r = searchFoods(s.q);
       const online = NATIVE ? (s.onlineQ === s.q.trim() && s.online ? (s.online.length ? `<div class="item" style="cursor:default;background:var(--soft)"><span class="small muted">UK products from Open Food Facts</span></div>${s.online.map((f, i) => resultRow({ src: "off", id: i, f: foodFromMine(f) })).join("")}` : `<div class="empty small">No UK products found online for “${esc(s.q)}”.</div>`) : `<div class="item" style="cursor:default;justify-content:center"><button class="btn sm" data-a="offSearch" ${s.searching ? "disabled" : ""}>${ic("search")} ${s.searching ? "Searching…" : "Search UK products online"}</button></div>`) : "";
@@ -1282,7 +1282,9 @@ SH.addFood = {
     if (s.tab === "recipes") { const rs = l.recipes.filter((r) => !r.draft); return rs.length ? rs.map((r) => resultRow({ src: "r", id: r.id, f: foodFromRecipe(r) })).join("") : `<div class="empty small">Recipes you create in Meals appear here.</div>`; }
     return "";
   },
+  results(s) { return SH.addFood.__base(s); },
   live(s) { const el = $("#food-results"); if (el) el.innerHTML = SH.addFood.results(s); },
+  _origResults(s) { return SH.addFood.__base(s); },
   after(s) { const q = $("#food-q"); if (q && !s._focused) { s._focused = true; if (window.matchMedia("(pointer:fine)").matches) q.focus(); } },
 };
 on("pickFood", (e) => {
@@ -1320,7 +1322,7 @@ SH.foodDetail = {
     const f = s.food, g = +s.g || 0, n = scaled(f.per100, g, f.natural), probs = nutritionProblems(f.per100);
     const canFix = f.src === "mine" || (s.mode === "edit" && f.src !== "generic");
     const warn = probs.length ? `<div class="banner stack" style="gap:6px"><strong>These nutrition values look wrong</strong><span>${f.source === "off" ? "Open Food Facts is edited by the public, and this product's entry has a mistake: " : "Something doesn't add up: "}${esc(probs.join("; "))}. Check the packet before you rely on them.</span>${canFix ? `<button class="btn sm" style="align-self:flex-start" data-a="fixFood">Fix the values</button>` : ""}${f.source === "off" && f.barcode ? `<a class="small" href="https://world.openfoodfacts.org/product/${encodeURIComponent(f.barcode)}" target="_blank" rel="noopener">Correct it on Open Food Facts for everyone</a>` : ""}</div>` : "";
-    const badges = [f.src === "gov" ? '<span class="chip pine">UK food data</span>' : "", f.src === "generic" ? '<span class="chip">Typical values</span>' : "", f.src === "mine" ? (f.source === "off" ? '<span class="chip">Open Food Facts</span>' : '<span class="chip warn">My food</span>') : "", f.src === "recipe" || f.src === "curated" ? '<span class="chip pine">Recipe</span>' : "", !probs.length && isHighProtein(f.per100) ? '<span class="chip good">High protein</span>' : "", !probs.length && isHighFibre(f.per100) ? '<span class="chip good">High fibre</span>' : "", probs.length ? '<span class="chip bad">Check values</span>' : ""].join("");
+    const badges = [f.src === "gov" ? '<span class="chip pine">UK food data</span>' : "", f.src === "generic" ? '<span class="chip">Typical values</span>' : "", f.src === "mine" ? (f.source === "off" ? (f.checked ? '<span class="chip">Open Food Facts · checked</span>' : '<span class="chip">Open Food Facts</span>') : '<span class="chip warn">My food</span>') : "", f.src === "recipe" || f.src === "curated" ? '<span class="chip pine">Recipe</span>' : "", !probs.length && isHighProtein(f.per100) ? '<span class="chip good">High protein</span>' : "", !probs.length && isHighFibre(f.per100) ? '<span class="chip good">High fibre</span>' : "", probs.length ? '<span class="chip bad">Check values</span>' : ""].join("");
     const servs = (f.serv || []).filter((x) => x[0] > 0);
     const alt = f.src === "generic" ? alternatives(f) : [];
     const big = safeImg(f.img || f.imgS);
@@ -2555,6 +2557,107 @@ const _meView = viewMe;
 viewMe = function () {
   return _meView().replace("</main>", `<p class="tiny muted" style="text-align:center;padding:0 8px 16px">Everyday food values from McCance and Widdowson's Composition of Foods Integrated Dataset 2021. Contains public sector information licensed under the <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" target="_blank" rel="noopener">Open Government Licence v3.0</a>.</p></main>`);
 };
+
+
+/* =================== Offline UK product list (Android app) =================== */
+// Built monthly from Open Food Facts by the food-db GitHub job and bundled into the APK under assets/offdb.
+async function fetchJSON(path) { try { const r = await fetch(path); if (!r.ok) return null; return await r.json(); } catch { return null; } }
+const LocalDB = {
+  meta: undefined, names: null, shards: {}, loading: null,
+  async getMeta() { if (this.meta === undefined) this.meta = NATIVE ? await fetchJSON("offdb/meta.json") : null; return this.meta; },
+  async shard(k) { if (!(k in this.shards)) this.shards[k] = (await fetchJSON(`offdb/b/${k}.json`)) || {}; return this.shards[k]; },
+  async byCode(code) { if (!NATIVE || !(await this.getMeta())) return null; const r = (await this.shard(code.slice(-2)))[code]; return r ? localToFood(code, r) : null; },
+  loadNames() {
+    if (this.names || this.loading || !NATIVE) return this.loading;
+    this.loading = (async () => {
+      if (!(await this.getMeta())) { this.names = []; return; }
+      const rows = (await fetchJSON("offdb/names.json")) || [];
+      rows.forEach((r) => { r.push(((r[2] ? r[2] + " " : "") + r[1]).toLowerCase()); }); // r[5]: lower-case search text
+      this.names = rows;
+    })();
+    return this.loading;
+  },
+  search(q, limit = 25) {
+    if (!this.names) return null;
+    const words = q.trim().toLowerCase().split(/\s+/).filter(Boolean); if (!words.length) return [];
+    const have = new Set(lib().foods.map((f) => f.barcode).filter(Boolean)), out = [];
+    for (const r of this.names) {
+      const hay = r[5]; let ok = true;
+      for (const w of words) if (!hay.includes(w)) { ok = false; break; }
+      if (!ok || have.has(r[0])) continue;
+      // UK barcodes start 50; products made for the UK get a nudge over imports that are also sold here
+      const sc = nameScore(hay, words) + Math.min(4, Math.log10(1 + (r[4] || 0))) + (r[0].startsWith("50") ? 2.5 : 0) + (/[éèêàçûôîï]/.test(hay) ? -2 : 0) + (r[2] ? 1 : 0);
+      out.push({ sc, r });
+    }
+    out.sort((a, b) => b.sc - a.sc);
+    return out.slice(0, limit).map((x) => x.r);
+  },
+};
+const offImg = (key, size) => (key ? `https://images.openfoodfacts.org/images/products/${key}.${size}.jpg` : "");
+function localToFood(code, r) {
+  return { id: uid(), name: r[0], brand: r[1], unit: r[10] || "g", size: r[11] || 0, servG: r[12] || 0, barcode: code, source: "off", checked: true,
+    img: offImg(r[13], 400), imgS: offImg(r[13], 200), per100: { kcal: r[2], p: r[3], c: r[4], s: r[5], f: r[6], sf: r[7], fi: r[8], salt: r[9], alc: r[14] || 0 } };
+}
+
+/* ----- Barcode: your foods, then the offline list, then a live lookup ----- */
+on("lookupBarcode", async () => {
+  const s = topS(), code = (s.code || "").replace(/\D/g, ""); if (code.length < 6) return toast("Enter a valid barcode number.");
+  let f = lib().foods.find((x) => x.barcode === code);
+  if (!f) {
+    s.busy = true; s.err = ""; refresh();
+    const local = await LocalDB.byCode(code);
+    if (local) f = saveOffFood(local);
+    else { toast("Looking up the barcode online…"); const off = await offLookup(code); if (off) { f = saveOffFood(off); toast(`Found ${off.name}`); } }
+    s.busy = false; if (topS() !== s) return;
+  }
+  UI.sheets.pop();
+  if (f) { const ff = foodFromMine(f); openSheet("foodDetail", { food: ff, g: ff.serv[0] ? ff.serv[0][0] : 100, meal: s.meal || defaultMeal(), date: s.date, mode: below("recipeEdit") || below("gotoEdit") ? "ing" : "add" }); }
+  else { toast("New barcode. Add it from the packet once and it'll scan next time."); openSheet("createFood", { barcode: code, meal: s.meal, date: s.date }); }
+});
+
+/* ----- Search: everyday foods, then UK products, then the online search ----- */
+const _addInit2 = SH.addFood.init;
+SH.addFood.init = (s) => { _addInit2(s); LocalDB.loadNames()?.then(() => { const t = topS(); if (t && t.kind === "addFood" && t.q && t.q.trim().length >= 3) SH.addFood.live(t); }); };
+SH.addFood.results = function (s) {
+  const q = (s.q || "").trim();
+  if (!q) return SH.addFood._tabs(s);
+  const r = searchFoods(q);
+  let html = r.map((x) => resultRow(x)).join("");
+  if (NATIVE && q.length >= 3) {
+    const loc = LocalDB.search(q);
+    if (loc === null) html += `<div class="item" style="cursor:default"><span class="small muted">Loading UK products…</span></div>`;
+    else if (loc.length) html += `<div class="item" style="cursor:default;background:var(--soft)"><span class="small muted">UK products</span></div>` + loc.map((x) => `<button class="item" data-a="pickLocal" data-code="${x[0]}">${thumb({ imgS: "" })}<div class="grow"><div class="nm">${esc(x[1])}</div><div class="meta">${x[2] ? esc(x[2]) + " · " : ""}${fmt(x[3])} kcal per 100</div></div></button>`).join("");
+  }
+  if (NATIVE) {
+    html += s.onlineQ === q && s.online ? (s.online.length ? `<div class="item" style="cursor:default;background:var(--soft)"><span class="small muted">More from Open Food Facts online</span></div>${s.online.map((f, i) => resultRow({ src: "off", id: i, f: foodFromMine(f) })).join("")}` : `<div class="empty small">Nothing else found online for “${esc(q)}”.</div>`)
+      : `<div class="item" style="cursor:default;justify-content:center"><button class="btn sm" data-a="offSearch" ${s.searching ? "disabled" : ""}>${ic("search")} ${s.searching ? "Searching…" : "Search more products online"}</button></div>`;
+  }
+  if (!html) html = `<div class="empty"><strong>No matches</strong><span class="small">Try fewer words, or create the food from its packet.</span><button class="btn sm" data-a="sheet" data-v="createFood" data-name="${esc(q)}">Create “${esc(q)}”</button></div>`;
+  return html;
+};
+// the tab lists (recent, Go-Tos, my foods, recipes) from the original sheet
+SH.addFood._tabs = (s) => { const keep = s.q; s.q = ""; const out = SH.addFood._origResults(s); s.q = keep; return out; };
+let _liveT;
+const _live = SH.addFood.live;
+SH.addFood.live = (s) => { clearTimeout(_liveT); _liveT = setTimeout(() => { if (topS() === s) _live(s); }, 140); };
+on("pickLocal", async (e) => {
+  const s = topS(), f = await LocalDB.byCode(e.code); if (!f) return toast("Couldn't open that product.");
+  const saved = saveOffFood(f), ff = foodFromMine(saved);
+  openSheet("foodDetail", { food: ff, g: ff.serv[0] ? r1(ff.serv[0][0]) : 100, meal: s.meal || defaultMeal(), date: s.date, mode: s.target ? "ing" : "add" });
+});
+
+/* ----- Products from the cleaned list carry their photo and a 'Checked' badge ----- */
+const _fromMine = foodFromMine;
+foodFromMine = function (f) { const o = _fromMine(f); o.checked = !!f.checked; return o; };
+
+/* ----- Show what's on the phone ----- */
+const _meView2 = viewMe;
+viewMe = function () {
+  const m = LocalDB.meta;
+  const line = m ? `<p class="tiny muted" style="text-align:center;padding:0 8px">Offline UK product list: ${fmt(m.products)} products, updated ${parseKey(m.built).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}. Built from Open Food Facts (Open Database Licence) with incomplete and impossible entries removed.</p>` : "";
+  return _meView2().replace("</main>", line + "</main>");
+};
+if (NATIVE) LocalDB.getMeta();
 
 /* start once every module above has loaded */
 start();
