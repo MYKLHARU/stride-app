@@ -15,6 +15,7 @@
   --good: #1E8A5A; --warn: #B7800A; --bad: #C23E2A;
   --display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
   --body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --c-kcal: #D9512B; --c-pro: #2F6FB3; --c-fib: #23915F; --c-carb: #C2850E; --c-fat: #8360C9;
   --r: 14px;
   color-scheme: light;
 }
@@ -22,12 +23,14 @@
   :root:not([data-theme="light"]) {
     --bg: #0E1412; --card: #172019; --ink: #E7EEEA; --muted: #93A29C; --line: #26322D; --soft: #1E2924;
     --accent: #FF7A50; --accent-ink: #1A0D08; --pine: #5CC4A6; --good: #4CC98D; --warn: #E7B13C; --bad: #FF7660;
+    --c-kcal: #FF7A50; --c-pro: #6FA8E8; --c-fib: #4CC98D; --c-carb: #E7B13C; --c-fat: #B39AF0;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0E1412; --card: #172019; --ink: #E7EEEA; --muted: #93A29C; --line: #26322D; --soft: #1E2924;
   --accent: #FF7A50; --accent-ink: #1A0D08; --pine: #5CC4A6; --good: #4CC98D; --warn: #E7B13C; --bad: #FF7660;
+  --c-kcal: #FF7A50; --c-pro: #6FA8E8; --c-fib: #4CC98D; --c-carb: #E7B13C; --c-fat: #B39AF0;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -176,6 +179,62 @@ input:focus, select:focus, textarea:focus { outline: 2px solid color-mix(in srgb
 .rcard .art { height: 92px; border-radius: 10px; display: grid; place-items: center; font-family: var(--display); font-size: 30px; font-weight: 700; color: #fff; }
 .thumb { width: 44px; height: 44px; border-radius: 8px; object-fit: contain; background: #fff; border: 1px solid var(--line); flex: none; }
 .hero-img { width: 100%; max-height: 220px; object-fit: contain; background: #fff; border-radius: 12px; border: 1px solid var(--line); padding: 8px; }
+
+/* ---- UI refresh ---- */
+.tabs { display: flex; gap: 22px; border-bottom: 1px solid var(--line); }
+.tabs.scroll { overflow-x: auto; scrollbar-width: none; }
+.tabs button { border: 0; background: none; padding: 8px 0 10px; font-family: var(--display); font-size: 20px; font-weight: 700; color: var(--muted); cursor: pointer; position: relative; white-space: nowrap; }
+.tabs.scroll button { font-family: var(--body); font-size: 15px; font-weight: 600; }
+.tabs button.on { color: var(--ink); }
+.tabs button.on::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; border-radius: 3px; background: var(--accent); }
+.pills { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.pill { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 5px 4px 7px; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
+.pill .pl { background: var(--c); color: #fff; font-size: 11px; font-weight: 700; border-radius: 7px; padding: 2px 0; width: 100%; text-align: center; }
+:root[data-theme="dark"] .pill .pl { color: #0E1412; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pill .pl { color: #0E1412; } }
+.pill .pv { font-size: 19px; line-height: 1.1; margin-top: 2px; }
+.pill .pv small { font-size: 12px; margin-left: 1px; }
+.pill .pt { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.pill .pb { display: block; width: 80%; height: 4px; border-radius: 4px; background: var(--soft); overflow: hidden; margin-top: 2px; }
+.pill .pb b { display: block; height: 100%; background: var(--c); border-radius: 4px; }
+.ndhead { display: flex; align-items: center; gap: 8px; border: 0; background: none; cursor: pointer; text-align: right; }
+.ndhead .t { display: flex; flex-direction: column; line-height: 1.1; } .ndhead .t span { font-size: 11px; color: var(--muted); }
+.ndhead .face { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-size: 20px; }
+.meal .head { border-bottom: 1px solid var(--line); }
+.mtitle { display: flex; align-items: center; gap: 4px; border: 0; background: none; cursor: pointer; padding: 0; color: var(--ink); }
+.qty { background: var(--soft); border-radius: 6px; padding: 1px 6px; font-weight: 600; }
+.ph-thumb { display: grid; place-items: center; font-weight: 700; color: var(--muted); background: var(--soft) !important; }
+.addrow { display: flex; align-items: center; gap: 8px; padding: 8px 10px 8px 14px; border-top: 1px solid var(--line); }
+.addrow > button.grow { display: flex; align-items: center; gap: 10px; border: 0; background: none; font-weight: 700; font-size: 15px; cursor: pointer; padding: 6px 0; text-align: left; color: var(--ink); }
+.addrow .plus { width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; }
+.addrow .plus svg { width: 16px; height: 16px; stroke-width: 3; }
+.hero2 { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 14px; }
+.hero2 .eyebrow { font-size: 13px; color: var(--muted); }
+.hero2 h2 { font-size: 24px; }
+.hero2 .big { font-size: 44px; line-height: 1; }
+.hero2.perfect { background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 14%, var(--card)), var(--card)); }
+.badge { width: 150px; height: 150px; }
+.burst { width: 190px; height: 190px; }
+.burst .cf { animation: pop .9s ease-out both; transform-box: fill-box; transform-origin: center; }
+@keyframes pop { from { opacity: 0; transform: scale(.2); } to { opacity: 1; } }
+.calcard { display: flex; flex-direction: column; gap: 8px; text-align: left; cursor: pointer; width: 100%; }
+.bar.thick { height: 12px; }
+.tick { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; flex: none; }
+.tick.on { background: var(--c); border-color: var(--c); color: #fff; }
+.tick svg { width: 15px; height: 15px; stroke-width: 3; }
+.celebrate { position: fixed; inset: 0; z-index: 70; background: rgba(8,14,12,.55); display: grid; place-items: center; padding: 20px; animation: up .25s ease-out; }
+.celebrate .cbox { background: var(--card); border-radius: 22px; padding: 18px 20px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: 360px; width: 100%; }
+.celebrate h1 { font-size: 36px; }
+.rgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.rc { padding: 0; overflow: hidden; text-align: left; cursor: pointer; display: flex; flex-direction: column; }
+.rimg { aspect-ratio: 4 / 3; overflow: hidden; background: var(--soft); }
+.rimg.big { border-radius: 14px; aspect-ratio: 16 / 9; }
+.rart { width: 100%; height: 100%; display: block; object-fit: cover; }
+.rimg.big .rart { height: 100%; }
+.rbody { padding: 9px 10px 11px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.rname { font-weight: 700; font-size: 14px; line-height: 1.25; }
+:root[data-theme="dark"] .rart { filter: brightness(.86) saturate(.95); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .rart { filter: brightness(.86) saturate(.95); } }
 
 </style>
 </head>
@@ -2135,6 +2194,229 @@ async function start() {
   if (UI.pendingOpen) { const id = UI.pendingOpen; UI.pendingOpen = null; window.onNativeOpen(id); }
   HC.syncRecent();
 }
+
+
+/* =================== UI refresh: colour-coded macros, simpler Home, drawn recipes, dark mode =================== */
+ICON.moon = '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>';
+ICON.sun = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+
+const MACRO_KEY = { Calories: "kcal", Protein: "pro", Fibre: "fib", Carbs: "carb", Fat: "fat", Fats: "fat" };
+// Overrides the earlier macroRow: each nutrient keeps its own colour everywhere
+function macroRow(label, v, t, unit = "g") {
+  const k = MACRO_KEY[label] || "pro", over = v > t * 1.1 && (label === "Fat" || label === "Carbs" || label === "Calories");
+  return `<div class="macro"><span style="font-weight:600">${label}</span><div class="bar ${over ? "over" : ""}"><i style="width:${clamp((v / t) * 100, 0, 100)}%;background:${over ? "var(--warn)" : `var(--c-${k})`}"></i></div><span class="num">${r0(v)}<span class="muted">/${r0(t)}${unit}</span></span></div>`;
+}
+function macroPills(n, t) {
+  const rows = [["Calories", "kcal", n.kcal, t.kcal, ""], ["Protein", "pro", n.p, t.protein, "g"], ["Fibre", "fib", n.fi, t.fibre, "g"], ["Carbs", "carb", n.c, t.carbs, "g"], ["Fat", "fat", n.f, t.fat, "g"]];
+  return `<div class="pills">${rows.map(([l, k, v, tt, u]) => `<div class="pill" style="--c:var(--c-${k})"><span class="pl">${l}</span><span class="pv num">${fmt(v)}${u ? `<small>${u}</small>` : ""}</span><span class="pt">of ${fmt(tt)}${u}</span><i class="pb"><b style="width:${clamp((v / (tt || 1)) * 100, 0, 100)}%"></b></i></div>`).join("")}</div>`;
+}
+const ND_FACE = { Excellent: "😄", Good: "🙂", OK: "😐", Poor: "🙁", "Very low": "😟" };
+function ndHeader(n) { const b = ndBand(ndScore(n)); return `<button class="ndhead" data-a="sheet" data-v="nutrition" aria-label="Nutrient Score ${b ? b.label : "not rated yet"}"><span class="t"><strong>${b ? b.label : "No rating"}</strong><span>Nutrient Score</span></span><span class="face" style="background:${b ? b.color : "var(--line)"}" aria-hidden="true">${b ? ND_FACE[b.label] : "·"}</span></button>`; }
+
+/* ----- Topbar with a quick light/dark switch ----- */
+function isDark() { const t = P() && P().theme; if (t === "dark") return true; if (t === "light") return false; try { return matchMedia("(prefers-color-scheme: dark)").matches; } catch { return false; } }
+function topbar(title) {
+  const s = sparkTotals(), dark = isDark();
+  return `<header class="topbar"><div class="brand">${title || "Str<b>i</b>de"}</div><div class="row">
+    <button class="sparks" data-a="sheet" data-v="sparks" aria-label="${s.total} sparks, open spark bank">${ic("spark")}<span class="num">${fmt(s.total)}</span></button>
+    <button class="iconbtn" data-a="toggleDark" aria-label="Switch to ${dark ? "light" : "dark"} mode">${ic(dark ? "sun" : "moon")}</button>
+    <button class="iconbtn" data-a="tab" data-v="me" aria-label="Profile and settings">${ic("user")}</button></div></header>`;
+}
+on("toggleDark", () => { const p = P(); p.theme = isDark() ? "light" : "dark"; setP(p); applyTheme(); rerender(); toast(p.theme === "dark" ? "Dark mode on. Choose Device in Profile to follow your phone." : "Light mode on"); });
+function applyTheme() {
+  const t = P() && P().theme;
+  if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t); else document.documentElement.removeAttribute("data-theme");
+  try { if (NATIVE && window.StrideNative.setDark) window.StrideNative.setDark(isDark()); } catch {}
+}
+try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { applyTheme(); if (Store.ready && P() && P().targets) rerender(); }); } catch {}
+
+/* ----- Home ----- */
+const TARGET_ICON = { calories: "kcal", protein: "pro", fibre: "fib", nutrient: "fib", steps: "carb", water: "pro", weight: "fat", hunger: "carb", workout: "kcal" };
+function badgeSvg(e) {
+  const n = e.total, gap = 6, r = 52, c = 2 * Math.PI * r, seg = c / n - gap;
+  let rings = "";
+  for (let i = 0; i < n; i++) rings += `<circle cx="70" cy="70" r="${r}" fill="none" stroke="${e.res[i].hit ? "var(--accent)" : "var(--soft)"}" stroke-width="12" stroke-dasharray="${seg} ${c - seg}" stroke-dashoffset="${-i * (c / n)}" transform="rotate(-90 70 70)"/>`;
+  return `<svg viewBox="0 0 140 140" class="badge" aria-hidden="true">${rings}<circle cx="70" cy="70" r="38" fill="var(--ink)"/><path d="M73 44L56 72h13l-3 24 19-30H71z" fill="var(--accent)"/></svg>`;
+}
+function burstSvg() {
+  let rays = "", conf = "";
+  for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2; rays += `<path d="M90 90 L${90 + Math.cos(a - 0.09) * 88} ${90 + Math.sin(a - 0.09) * 88} L${90 + Math.cos(a + 0.09) * 88} ${90 + Math.sin(a + 0.09) * 88}Z" fill="var(--accent)" opacity="${i % 2 ? 0.08 : 0.16}"/>`; }
+  const cols = ["var(--c-kcal)", "var(--c-pro)", "var(--c-fib)", "var(--c-carb)", "var(--c-fat)"];
+  for (let i = 0; i < 26; i++) { const a = i * 2.4, d = 46 + ((i * 37) % 40); conf += `<rect class="cf" style="animation-delay:${(i % 7) * 0.08}s" x="${90 + Math.cos(a) * d}" y="${90 + Math.sin(a) * d}" width="${4 + (i % 3) * 2}" height="${3 + (i % 2) * 3}" rx="1" fill="${cols[i % 5]}" transform="rotate(${i * 33} ${90 + Math.cos(a) * d} ${90 + Math.sin(a) * d})"/>`; }
+  return `<svg viewBox="0 0 180 180" class="burst" aria-hidden="true">${rays}${conf}<circle cx="90" cy="90" r="40" fill="var(--accent)"/><path d="M94 60L74 92h15l-4 28 22-35H90z" fill="var(--accent-ink)"/></svg>`;
+}
+function viewHome() {
+  const e = evalDay(UI.date), d = e.d, p = P(), isPast = UI.date < todayKey(), isToday = UI.date === todayKey();
+  const seg = `<div class="tabs" role="tablist">${[["today", "Today"], ["progress", "Charts"]].map(([k, l]) => `<button role="tab" aria-selected="${UI.homeTab === k}" class="${UI.homeTab === k ? "on" : ""}" data-a="homeTab" data-v="${k}">${l}</button>`).join("")}</div>`;
+  if (UI.homeTab === "tasks") UI.homeTab = "today";
+  let body = "";
+  if (UI.homeTab === "today") {
+    const left = e.t.kcal - e.n.kcal;
+    const eyebrow = e.perfect ? "You hit all of your targets" : e.hits === 0 ? (isPast ? "Nothing logged" : "Let's go") : isPast ? "Good effort" : "Keep going";
+    const headline = e.perfect ? "Perfect day!" : e.hits === 0 ? (isPast ? "No targets hit on this day" : `Hit your targets, ${esc(p.name)}`) : "Keep hitting those targets";
+    const hungerLabels = ["", "Starving", "Peckish", "Satisfied", "Full", "Stuffed"];
+    const value = (r) => ({ calories: `${fmt(e.n.kcal)} / ${fmt(e.t.kcal)} kcal`, protein: `${r0(e.n.p)} / ${e.t.protein}g`, fibre: `${r1(e.n.fi)} / ${e.t.fibre}g`, nutrient: e.band ? e.band.label : "Not rated yet", steps: `${d.steps != null ? fmt(d.steps) : 0} / ${fmt(e.t.steps)}${d.stepsSrc === "hc" ? " · synced" : ""}`, water: `${fmt(d.water)} / ${fmt(e.t.water)} ml`, weight: d.weight && d.weight.kg ? showW(d.weight.kg) : "Not weighed yet", hunger: d.hunger ? hungerLabels[d.hunger] : "Not rated yet", workout: d.workouts.length ? esc(d.workouts[0].name) : isWorkoutDay(UI.date) ? "Choose a workout" : "Rest and recover" }[r.key]);
+    const action = { calories: 'data-a="tab" data-v="diary"', protein: 'data-a="tab" data-v="diary"', fibre: 'data-a="tab" data-v="diary"', nutrient: 'data-a="sheet" data-v="nutrition"', steps: 'data-a="sheet" data-v="logSteps"', water: 'data-a="sheet" data-v="logWater"', weight: 'data-a="sheet" data-v="logWeight"', hunger: 'data-a="sheet" data-v="logHunger"', workout: 'data-a="tab" data-v="train"' };
+    body = `${datebar()}
+    <section class="card hero2 ${e.perfect ? "perfect" : ""}" aria-label="Today's targets">
+      <div class="eyebrow">${eyebrow}</div><h2>${headline}</h2>
+      ${e.perfect ? burstSvg() : badgeSvg(e)}
+      <div><span class="num big">${e.hits}</span> <span class="muted">of ${e.total} hit</span></div>
+      <div class="row" style="justify-content:center;gap:8px"><span class="chip accent">${ic("spark", 'style="width:14px;height:14px"')} +${e.sparks} sparks</span><button class="btn sm" data-a="sheet" data-v="sparks">Learn how</button></div>
+    </section>
+    <button class="card calcard" data-a="tab" data-v="diary"><div class="row between"><span style="font-weight:700">Calories ${ic("right", 'style="width:16px;height:16px;vertical-align:-3px"')}</span><span class="small muted">${left >= 0 ? `${fmt(left)} left` : `${fmt(-left)} over`}</span></div>
+      <div><span class="num" style="font-size:30px">${fmt(e.n.kcal)}</span> <span class="muted">kcal of ${fmt(e.t.kcal)} kcal</span></div>
+      <div class="bar thick ${left < 0 ? "over" : ""}"><i style="width:${clamp((e.n.kcal / e.t.kcal) * 100, 0, 100)}%;background:${left < 0 ? "var(--warn)" : "var(--c-kcal)"}"></i></div>
+      <div class="row between small" style="color:var(--pine);font-weight:600"><span>Go to food diary</span>${ic("right", 'style="width:16px;height:16px"')}</div></button>
+    <section class="card list" style="padding:0" aria-label="Your targets"><div class="item" style="cursor:default"><h3 class="grow">Your targets</h3><span class="small muted">Tap to log</span></div>
+      ${e.res.map((r) => `<button class="item" ${action[r.key]}><span class="tick ${r.hit ? "on" : ""}" style="--c:var(--c-${TARGET_ICON[r.key]})">${r.hit ? ic("check") : ""}</span><div class="grow"><div class="nm">${r.label}</div><div class="meta">${value(r)}</div></div>${r.sparks ? `<span class="small ${r.hit ? "" : "muted"}" style="font-weight:700">+${r.sparks}</span>` : ""}</button>`).join("")}
+    </section>
+    <div class="grid2"><button class="btn primary" data-a="sheet" data-v="addFood" data-meal="${defaultMeal()}">${ic("plus")} Log food</button><button class="btn" data-a="sheet" data-v="scan" data-meal="${defaultMeal()}">${ic("scan")} Scan barcode</button></div>
+    ${storageBanner()}`;
+    if (isToday) setTimeout(() => maybeCelebrate(e), 60);
+  }
+  if (UI.homeTab === "progress") body = viewProgress();
+  return `${topbar()}<main class="stack">${seg}${body}</main>`;
+}
+function maybeCelebrate(e) {
+  if (!e.perfect || UI.sheets.length || $("#celebrate")) return;
+  const k = todayKey(), cel = Store.get("celebrated", {}); if (cel[k]) return;
+  const keep = Object.keys(cel).sort().slice(-20), next = {}; keep.forEach((x) => (next[x] = 1)); next[k] = 1; Store.set("celebrated", next);
+  const el = document.createElement("div"); el.id = "celebrate"; el.className = "celebrate"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "Perfect day");
+  el.innerHTML = `<div class="cbox">${burstSvg()}<h1>Perfect day!</h1><p class="muted">You hit all ${e.total} of your targets today.</p><div class="chip accent" style="font-size:15px;padding:6px 14px">${ic("spark", 'style="width:16px;height:16px"')} +${e.sparks} sparks</div><button class="btn primary block" data-a="closeCelebrate">Brilliant</button></div>`;
+  document.body.appendChild(el);
+  try { navigator.vibrate && navigator.vibrate([60, 40, 90]); } catch {}
+}
+on("closeCelebrate", () => { const el = $("#celebrate"); if (el) el.remove(); });
+
+/* ----- Diary ----- */
+function viewDiary() {
+  const e = evalDay(UI.date), d = e.d;
+  const meals = MEALS.map(([k, label]) => {
+    const items = d.food.map((it, i) => ({ it, i })).filter((x) => x.it.meal === k);
+    const n = sumN(items.map((x) => itemN(x.it)));
+    return `<section class="card meal" aria-label="${label}">
+      <div class="head"><button class="mtitle" ${items.length ? `data-a="sheet" data-v="mealMenu" data-meal="${k}"` : `data-a="sheet" data-v="addFood" data-meal="${k}"`}><h3>${label}</h3>${ic("right", 'style="width:18px;height:18px"')}</button><div style="text-align:right"><div class="num" style="font-size:22px;line-height:1">${fmt(n.kcal)}</div><div class="tiny muted">Total kcal</div></div></div>
+      ${items.map(({ it, i }) => { const nn = itemN(it); return `<button class="item" data-a="sheet" data-v="foodDetail" data-idx="${i}">${thumb(it) || `<span class="thumb ph-thumb" aria-hidden="true">${esc((it.name || "?")[0])}</span>`}<div class="grow"><div class="nm">${esc(it.name)}</div><div class="meta"><span class="qty">${r1(it.g)}${it.unit || "g"}</span>${it.brand ? " " + esc(it.brand) : ""}</div></div><span class="small muted" style="white-space:nowrap">${fmt(nn.kcal)} kcal</span></button>`; }).join("")}
+      <div class="addrow"><button class="grow" data-a="sheet" data-v="addFood" data-meal="${k}" aria-label="Add food to ${label}"><span class="plus">${ic("plus")}</span>Add food</button>${items.length ? `<button class="iconbtn" style="width:34px;height:34px;border:0;background:var(--soft)" data-a="sheet" data-v="mealMenu" data-meal="${k}" aria-label="${label} options">${ic("more")}</button>` : ""}</div>
+    </section>`;
+  }).join("");
+  return `<header class="topbar"><div class="brand">Food Diary</div>${ndHeader(e.n)}</header><main class="stack">${datebar()}
+    ${macroPills(e.n, e.t)}
+    <button class="card row between" style="cursor:pointer;text-align:left" data-a="sheet" data-v="nutrition"><span class="row">${ic("diary", 'style="width:20px;height:20px;color:var(--pine)"')}<strong>View nutrition</strong></span>${ic("right", 'style="width:18px;height:18px;color:var(--muted)"')}</button>
+    ${meals}
+    <div class="grid2"><button class="btn" data-a="sheet" data-v="quickAdd" data-meal="${defaultMeal()}">Quick add calories</button><button class="btn" data-a="sheet" data-v="copyDay">Copy a day</button></div></main>`;
+}
+
+/* ----- Drawn recipe pictures ----- */
+const ART = [
+  [/chicken|turkey/i, "#E9BC8B", "chunk"], [/beef|mince|steak|kebab/i, "#7E4430", "crumb"], [/salmon/i, "#F08C6A", "slab"], [/cod|fish/i, "#F4E6D0", "slab"],
+  [/prawn/i, "#F4A07A", "prawn"], [/egg/i, "#FFF6E0", "egg"], [/lentil|dal/i, "#E39A3B", "mash"], [/chickpea/i, "#E5BF78", "pea"], [/kidney/i, "#8E2B2B", "bean"],
+  [/black bean/i, "#2E2622", "bean"], [/baked bean/i, "#C9562E", "bean"], [/rice|couscous|quinoa/i, "#F6F1E4", "grain"], [/pasta|noodle/i, "#EFD186", "noodle"],
+  [/spinach|salad|leaves/i, "#3F8E48", "leaf"], [/broccoli/i, "#2F7D3B", "floret"], [/green bean/i, "#4C9A42", "stick"], [/peas|edamame|mixed veg/i, "#69B34C", "pea"],
+  [/tomato|pepper/i, "#D9442E", "chunk"], [/sweetcorn/i, "#F2C94C", "pea"], [/sweet potato/i, "#E7893A", "wedge"], [/potato|chips/i, "#E9C77F", "wedge"],
+  [/yoghurt|skyr|cottage|cream cheese/i, "#FFFDF6", "dollop"], [/feta|mozzarella|halloumi/i, "#FFF7E3", "chunk"], [/cheddar|cheese/i, "#F2C14E", "shred"],
+  [/berr|blueberr/i, "#4B3F9E", "pea"], [/strawberr|raspberr/i, "#C8314A", "pea"], [/banana/i, "#F3D36B", "coin"], [/oat|granola|cereal|biscuit/i, "#D7BE94", "grain"],
+  [/chocolate/i, "#55372A", "drizzle"], [/almond|nut|peanut/i, "#C48E5A", "crumb"], [/honey|jam/i, "#E7AE3F", "drizzle"], [/chia/i, "#3A3A3A", "crumb"],
+  [/wrap|tortilla|bagel|bread|bun|crumpet/i, "#E2B77C", "bread"], [/onion/i, "#EAD3E2", "ring"], [/carrot/i, "#EE8A2E", "coin"], [/mushroom/i, "#B39478", "chunk"],
+  [/courgette|cucumber/i, "#8DBF5A", "coin"], [/milk|oat drink/i, "#FFFDF8", "dollop"], [/tofu|mycoprotein/i, "#EFE3C4", "chunk"],
+];
+function artFor(name) { for (const [re, col, shape] of ART) if (re.test(name)) return { col, shape }; return null; }
+function seeded(str) { let h = 2166136261; for (const ch of str) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return () => ((h = Math.imul(h ^ (h >>> 15), 2246822507) ^ Math.imul(h ^ (h >>> 13), 3266489909)) >>> 0) / 4294967296; }
+const BGS = ["#F6D9C8", "#D7E8D5", "#F4E3B5", "#DCD9F2", "#CFE2EE", "#F2D2DC"];
+function recipeArt(id, ingredients, idx = 0) {
+  const rnd = seeded(id), W = 200, H = 150, cx = 100, cy = 82, rx = 74, ry = 46;
+  const parts = ingredients.map(([n, g]) => ({ n, g, a: artFor(n) })).filter((x) => x.a && !/oil/i.test(x.n)).sort((a, b) => b.g - a.g);
+  const bread = parts.find((x) => x.a.shape === "bread");
+  const base = parts.find((x) => ["grain", "noodle", "mash", "wedge"].includes(x.a.shape)) || parts[0];
+  const isBowl = !bread && !!parts.find((x) => /lentil|chickpea|chilli|curry|noodle|oat|yoghurt|skyr/i.test(x.n));
+  let s = `<svg viewBox="0 0 ${W} ${H}" class="rart" aria-hidden="true"><rect width="${W}" height="${H}" fill="${BGS[idx % BGS.length]}"/>`;
+  for (let i = 0; i < 7; i++) s += `<circle cx="${rnd() * W}" cy="${rnd() * H}" r="${2 + rnd() * 3}" fill="#fff" opacity=".35"/>`;
+  s += `<ellipse cx="${cx}" cy="${cy + 12}" rx="${rx + 8}" ry="${ry + 4}" fill="#000" opacity=".1"/>`;
+  if (isBowl) s += `<path d="M${cx - rx - 6},${cy - 6} Q${cx},${cy + ry + 54} ${cx + rx + 6},${cy - 6}Z" fill="#FFFFFF"/><path d="M${cx - rx - 6},${cy - 6} Q${cx},${cy + ry + 54} ${cx + rx + 6},${cy - 6}" fill="none" stroke="#000" stroke-opacity=".08" stroke-width="3"/>`;
+  s += `<ellipse cx="${cx}" cy="${cy - 6}" rx="${rx + 6}" ry="${ry - 4}" fill="#FFFFFF"/><ellipse cx="${cx}" cy="${cy - 6}" rx="${rx - 4}" ry="${ry - 12}" fill="#F3F1EC"/>`;
+  const inside = () => { const a = rnd() * Math.PI * 2, r = Math.sqrt(rnd()) * 0.8; return [cx + Math.cos(a) * (rx - 14) * r, cy - 6 + Math.sin(a) * (ry - 18) * r]; };
+  const title = (ingredients.title || "").toLowerCase();
+  if (bread || /omelette/.test(title)) {
+    const fill = parts.filter((x) => x !== bread && x.a.shape !== "bread");
+    if (/wrap|fajita/.test(title)) {
+      [[-22, -14, -12], [24, 2, 10]].forEach(([dx, dy, rot]) => {
+        const x0 = cx + dx, y0 = cy - 10 + dy;
+        s += `<g transform="rotate(${rot} ${x0} ${y0})"><rect x="${x0 - 44}" y="${y0 - 13}" width="88" height="26" rx="13" fill="${bread ? bread.a.col : "#E2B77C"}"/><rect x="${x0 - 44}" y="${y0 - 13}" width="88" height="26" rx="13" fill="none" stroke="#000" stroke-opacity=".08"/>`;
+        s += `<ellipse cx="${x0 + 40}" cy="${y0}" rx="9" ry="13" fill="#F3E2BE"/>`;
+        fill.slice(0, 4).forEach((f, i) => { s += `<circle cx="${x0 + 38 + (i % 2) * 4}" cy="${y0 - 6 + i * 4}" r="3.2" fill="${f.a.col}"/>`; });
+        for (let i = 0; i < 6; i++) s += `<circle cx="${x0 - 34 + i * 12}" cy="${y0 - 4 + (i % 2) * 7}" r="1.6" fill="#B07A3E" opacity=".6"/>`;
+        s += `</g>`;
+      });
+    } else if (/burger|bagel|bun|stack/.test(title)) {
+      const y = cy - 6, col = bread ? bread.a.col : "#D9A35E", patty = fill.find((f) => /turkey|beef|chicken|mince/i.test(f.n));
+      s += `<path d="M${cx - 44},${y + 10} h88 a10,10 0 0 1 -10,12 h-68 a10,10 0 0 1 -10,-12z" fill="${col}"/>`;
+      s += `<path d="M${cx - 50},${y + 6} q8,-8 16,0 t16,0 t16,0 t16,0 t16,0 t16,0" fill="none" stroke="#5FAE4E" stroke-width="7" stroke-linecap="round"/>`;
+      s += `<rect x="${cx - 46}" y="${y - 8}" width="92" height="13" rx="6" fill="${patty ? "#8A5636" : "#8A5636"}"/>`;
+      s += `<path d="M${cx - 44},${y - 9} L${cx + 44},${y - 9} L${cx + 30},${y - 1} L${cx - 30},${y - 1}Z" fill="#F2C14E"/>`;
+      s += `<rect x="${cx - 40}" y="${y - 16}" width="80" height="7" rx="3" fill="#D9442E"/>`;
+      s += `<path d="M${cx - 48},${y - 16} q48,-52 96,0z" fill="${col}"/>`;
+      for (let i = 0; i < 9; i++) s += `<ellipse cx="${cx - 30 + rnd() * 60}" cy="${y - 30 + rnd() * 10}" rx="2" ry="1.1" fill="#FFF4D6"/>`;
+    } else {
+      // omelette with a slice of toast
+      s += `<rect x="${cx + 8}" y="${cy - 34}" width="44" height="40" rx="8" fill="#C98E50" transform="rotate(8 ${cx + 30} ${cy - 14})"/><rect x="${cx + 12}" y="${cy - 30}" width="36" height="32" rx="6" fill="#E9C389" transform="rotate(8 ${cx + 30} ${cy - 14})"/>`;
+      s += `<path d="M${cx - 58},${cy - 4} a34,26 0 0 1 68,0z" fill="#F6CF4A"/><path d="M${cx - 58},${cy - 4} h68" stroke="#E2B530" stroke-width="3"/>`;
+      fill.forEach((f) => { for (let i = 0; i < 6; i++) s += `<circle cx="${cx - 50 + rnd() * 52}" cy="${cy - 22 + rnd() * 14}" r="2.4" fill="${f.a.col}"/>`; });
+    }
+  } else {
+    if (base) s += `<ellipse cx="${cx}" cy="${cy - 6}" rx="${rx - 10}" ry="${ry - 17}" fill="${base.a.col}"/>`;
+    if (base && base.a.shape === "grain") for (let i = 0; i < 60; i++) { const [x, y] = inside(); s += `<ellipse cx="${x}" cy="${y}" rx="2.4" ry="1.2" fill="#fff" opacity=".55" transform="rotate(${rnd() * 180} ${x} ${y})"/>`; }
+    if (base && base.a.shape === "noodle") for (let i = 0; i < 9; i++) { const [x, y] = inside(); s += `<path d="M${x - 18},${y} q6,-6 12,0 t12,0 t12,0" fill="none" stroke="#D9B661" stroke-width="2.4" stroke-linecap="round"/>`; }
+    const total = parts.reduce((a, x) => a + x.g, 0) || 1;
+    parts.filter((x) => x !== base).forEach((x) => {
+      const n = Math.max(3, Math.min(16, Math.round((x.g / total) * 40)));
+      for (let i = 0; i < n; i++) {
+        const [px, py] = inside(), c = x.a.col, rot = rnd() * 360;
+        switch (x.a.shape) {
+          case "chunk": s += `<rect x="${px - 6}" y="${py - 5}" width="${10 + rnd() * 4}" height="${8 + rnd() * 3}" rx="3" fill="${c}" stroke="#000" stroke-opacity=".08" transform="rotate(${rot} ${px} ${py})"/>`; break;
+          case "crumb": s += `<circle cx="${px}" cy="${py}" r="${2 + rnd() * 2.5}" fill="${c}"/>`; break;
+          case "slab": if (i < 2) s += `<rect x="${px - 18}" y="${py - 9}" width="36" height="18" rx="6" fill="${c}"/><path d="M${px - 10},${py - 7} l4,14 M${px},${py - 8} l4,15 M${px + 9},${py - 7} l3,13" stroke="#fff" stroke-opacity=".6" stroke-width="1.6"/>`; break;
+          case "prawn": s += `<path d="M${px - 6},${py} a6,6 0 1,1 10,4" fill="none" stroke="${c}" stroke-width="5" stroke-linecap="round" transform="rotate(${rot} ${px} ${py})"/>`; break;
+          case "egg": if (i < 3) s += `<ellipse cx="${px}" cy="${py}" rx="13" ry="10" fill="${c}"/><circle cx="${px + 1}" cy="${py}" r="5" fill="#F2B31F"/>`; break;
+          case "pea": case "bean": s += `<ellipse cx="${px}" cy="${py}" rx="${x.a.shape === "bean" ? 4.5 : 3.2}" ry="3" fill="${c}" transform="rotate(${rot} ${px} ${py})"/>`; break;
+          case "leaf": s += `<path d="M${px},${py} q7,-9 14,0 q-7,7 -14,0z" fill="${c}" transform="rotate(${rot} ${px} ${py})"/>`; break;
+          case "floret": s += `<circle cx="${px}" cy="${py}" r="5" fill="${c}"/><circle cx="${px + 4}" cy="${py - 3}" r="4" fill="${c}"/><rect x="${px}" y="${py + 2}" width="3" height="6" fill="#8CBF6A"/>`; break;
+          case "stick": s += `<rect x="${px - 9}" y="${py - 1.5}" width="18" height="3.5" rx="2" fill="${c}" transform="rotate(${rot} ${px} ${py})"/>`; break;
+          case "wedge": s += `<path d="M${px - 7},${py + 4} L${px},${py - 7} L${px + 7},${py + 4}Z" fill="${c}" stroke="#000" stroke-opacity=".08" transform="rotate(${rot} ${px} ${py})"/>`; break;
+          case "dollop": if (i < 2) s += `<path d="M${px - 11},${py + 4} q0,-12 11,-12 q11,0 11,12z" fill="${c}"/><circle cx="${px - 3}" cy="${py - 4}" r="2" fill="#fff"/>`; break;
+          case "shred": s += `<rect x="${px - 5}" y="${py - 1}" width="10" height="2.2" rx="1" fill="${c}" transform="rotate(${rot} ${px} ${py})"/>`; break;
+          case "coin": case "ring": s += `<circle cx="${px}" cy="${py}" r="4.2" fill="${x.a.shape === "ring" ? "none" : c}" stroke="${c}" stroke-width="${x.a.shape === "ring" ? 1.8 : 0}"/>`; break;
+          case "drizzle": if (i < 2) s += `<path d="M${px - 20},${py} q6,-8 12,0 t12,0 t12,0" fill="none" stroke="${c}" stroke-width="2.6" stroke-linecap="round"/>`; break;
+          case "mash": s += `<circle cx="${px}" cy="${py}" r="${3 + rnd() * 3}" fill="${c}" opacity=".85"/>`; break;
+          default: s += `<circle cx="${px}" cy="${py}" r="3" fill="${c}"/>`;
+        }
+      }
+    });
+  }
+  return s + "</svg>";
+}
+const withTitle = (arr, title) => Object.assign(arr, { title });
+const curatedArt = (r) => recipeArt(r.id, withTitle([...r.ing], r.name), RECIPES.indexOf(r));
+const myArt = (r, i) => recipeArt(r.id, withTitle((r.ingredients || []).map((x) => [x.name, x.g]), r.name), i + 2);
+function recipeCard(r, art, kcal, sub, attrs) {
+  return `<button class="card rc" ${attrs}><div class="rimg">${art}</div><div class="rbody"><div class="rname">${esc(r.name)}</div><div class="row wrap" style="gap:5px"><span class="chip">${fmt(kcal)} kcal</span>${sub}</div></div></button>`;
+}
+function viewMeals() {
+  const cats = ["All", ...new Set(RECIPES.flatMap((r) => r.cats))];
+  const list = RECIPES.filter((r) => UI.mealCat === "All" || r.cats.includes(UI.mealCat));
+  const mine = lib().recipes;
+  return `${topbar("Meal Inspiration")}<main class="stack">
+    <div class="tabs scroll" role="tablist" aria-label="Recipe categories">${cats.map((c) => `<button role="tab" aria-selected="${UI.mealCat === c}" class="${UI.mealCat === c ? "on" : ""}" data-a="mealCat" data-v="${esc(c)}">${esc(c)}</button>`).join("")}</div>
+    <div class="rgrid">${list.map((r) => { const n = recipeTotals(r), per = 1 / r.serves; return recipeCard(r, curatedArt(r), n.kcal * per, isHighProtein({ kcal: n.kcal, p: n.p }) ? `<span class="chip pine">High protein</span>` : `<span class="chip">${r.mins} min</span>`, `data-a="sheet" data-v="recipeView" data-id="${r.id}"`); }).join("")}</div>
+    <div class="section-title"><h2>My recipes</h2><button class="btn sm" data-a="sheet" data-v="recipeEdit">${ic("plus")} Create</button></div>
+    ${mine.length ? `<div class="rgrid">${mine.map((r, i) => { const n = recipeTotals(r), sv = r.mode === "equal" ? r.servings || 1 : 1; return recipeCard(r, myArt(r, i), n.kcal / sv, r.draft ? `<span class="chip warn">Draft</span>` : `<span class="chip">${r.mode === "equal" ? "per serving" : r.mode === "custom" ? "whole recipe" : "1 serving"}</span>`, `data-a="sheet" data-v="recipeEdit" data-id="${r.id}"`); }).join("")}</div>` : `<div class="card empty"><strong>Add your first recipe</strong><span class="small">Save meals you cook so you can log a portion in a few taps.</span></div>`}
+  </main>`;
+}
+// recipe detail gets its picture too
+const _rvBody = SH.recipeView.body;
+SH.recipeView.body = (s) => `<div class="rimg big">${curatedArt(RECIPES.find((x) => x.id === s.id))}</div>` + _rvBody(s);
+
+/* start once every module above has loaded */
 start();
 
 </script>

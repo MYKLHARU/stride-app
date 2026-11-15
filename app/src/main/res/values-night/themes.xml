@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Stride" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/stride_bg</item>
+        <item name="android:statusBarColor">@color/stride_bg</item>
+        <item name="android:navigationBarColor">@color/stride_bar</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+</resources>

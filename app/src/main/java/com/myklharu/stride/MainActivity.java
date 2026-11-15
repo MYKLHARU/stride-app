@@ -54,14 +54,9 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         boolean night = (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
-        getWindow().setStatusBarColor(Color.parseColor(night ? "#0E1412" : "#F1F3F0"));
-        getWindow().setNavigationBarColor(Color.parseColor(night ? "#172019" : "#FFFFFF"));
-        if (!night) {
-            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
-        }
-
         web = new WebView(this);
         web.setBackgroundColor(Color.parseColor(night ? "#0E1412" : "#F1F3F0"));
+        applyBars(night);
         setContentView(web);
 
         final WebViewAssetLoader loader = new WebViewAssetLoader.Builder()
@@ -197,6 +192,17 @@ public class MainActivity extends Activity {
         fileCallback = null;
     }
 
+    /** Status and navigation bars follow the app's light or dark look. */
+    @SuppressWarnings("deprecation")
+    private void applyBars(boolean dark) {
+        getWindow().setStatusBarColor(Color.parseColor(dark ? "#0E1412" : "#F1F3F0"));
+        getWindow().setNavigationBarColor(Color.parseColor(dark ? "#172019" : "#FFFFFF"));
+        int flags = getWindow().getDecorView().getSystemUiVisibility();
+        int light = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+        getWindow().getDecorView().setSystemUiVisibility(dark ? (flags & ~light) : (flags | light));
+        if (web != null) web.setBackgroundColor(Color.parseColor(dark ? "#0E1412" : "#F1F3F0"));
+    }
+
     private void callJs(String fn, String value) {
         final String js = "window." + fn + " && window." + fn + "(" + JSONObject.quote(value) + ")";
         runOnUiThread(() -> web.evaluateJavascript(js, null));
@@ -223,6 +229,11 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void scanBarcode() {
             runOnUiThread(MainActivity.this::startScan);
+        }
+
+        @JavascriptInterface
+        public void setDark(boolean dark) {
+            runOnUiThread(() -> applyBars(dark));
         }
 
         @JavascriptInterface

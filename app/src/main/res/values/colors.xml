@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#D9512B</color>
+    <color name="stride_bg">#F1F3F0</color>
+    <color name="stride_bar">#FFFFFF</color>
 </resources>
